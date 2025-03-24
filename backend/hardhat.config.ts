@@ -10,6 +10,12 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
   }
 });
 
+task("balance", "Shows the sale of account[0] on the network")
+    .setAction(async (args, hre) => {
+      const [account] = await hre.ethers.getSigners();
+      const balance = await hre.ethers.provider.getBalance(account.address);
+      console.log(`Solde de ${account.address}: ${hre.ethers.formatEther(balance)} ETH`);
+    });
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "";
 let PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
@@ -20,6 +26,7 @@ const config: HardhatUserConfig = {
     sepolia: {
       url: SEPOLIA_RPC_URL,
       accounts: [PRIVATE_KEY],
+      gas: 2500000,
     },
     hardhat: {
       chainId: 31337,

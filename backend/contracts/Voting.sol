@@ -9,12 +9,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * The contract ensures transparency and fairness while allowing different stages of the voting process.
  */
 contract Voting is Ownable {
-    
+
     /**
      * @dev Initializes the contract and sets the initial workflow status to RegisteringVoters.
+     * Also auto-registers the contract deployer (admin) as a voter.
      */
     constructor() Ownable(msg.sender) {
         workflowStatus = WorkflowStatus.RegisteringVoters;
+        voters[msg.sender].isRegistered = true;
+        voterAddresses.push(msg.sender);
+        emit VoterRegistered(msg.sender);
     }
 
     ///------------------------------------------------------------------------
@@ -32,7 +36,7 @@ contract Voting is Ownable {
         VotingSessionEnded,
         VotesTallied
     }
-    
+
     /**
      * @dev Structure representing a voter.
      */
@@ -42,7 +46,7 @@ contract Voting is Ownable {
         bool hasAbstained;
         uint votedProposalId;
     }
-    
+
     /**
      * @dev Structure representing a proposal.
      */
@@ -51,6 +55,9 @@ contract Voting is Ownable {
         uint voteCount;
     }
 
+    /**
+     * @dev Structure representing voting results.
+     */
     struct VotingResult {
         uint winningProposalId;
         string winningProposalDescription;
@@ -69,14 +76,12 @@ contract Voting is Ownable {
     Proposal[] public winningProposals;
     WorkflowStatus public workflowStatus;
     VotingResult[] public pastResults;
-    
+    address[] public voterAddresses;
+
     ///------------------------------------------------------------------------
     /// EVENTS
     ///------------------------------------------------------------------------
-    
-    /**
-     * @dev Events emitted during contract operations.
-     */
+
     event VoterRegistered(address indexed voterAddress);
     event VoterRemoved(address indexed voterAddress);
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
@@ -85,7 +90,7 @@ contract Voting is Ownable {
     event VoteUpdated(address indexed voter, uint indexed newProposalId);
     event Abstained(address indexed voter);
     event VoteTallied(uint winningProposalId, string description, uint voteCount);
-    
+
     ///------------------------------------------------------------------------
     /// MODIFIERS
     ///------------------------------------------------------------------------
@@ -97,7 +102,7 @@ contract Voting is Ownable {
         require(voters[msg.sender].isRegistered, "You are not registered as a voter.");
         _;
     }
-    
+
     /**
      * @dev Modifier to ensure function execution during the voting session.
      */
@@ -105,7 +110,7 @@ contract Voting is Ownable {
         require(workflowStatus == WorkflowStatus.VotingSessionStarted, "Voting session is not active.");
         _;
     }
-    
+
     /**
      * @dev Modifier to ensure function execution only after the voting session has ended.
      */
@@ -113,11 +118,20 @@ contract Voting is Ownable {
         require(workflowStatus == WorkflowStatus.VotingSessionEnded, "Voting session has not ended yet.");
         _;
     }
-    
+
     ///------------------------------------------------------------------------
-    /// FUNCTIONS
+    /// READ FUNCTIONS
     ///------------------------------------------------------------------------
-    
+
+    /**
+     * @notice Check if an address is registered as voter (publicly viewable).
+     * @param _addr The address to check.
+     * @return True if registered, false otherwise.
+     */
+    function isRegisteredVoter(address _addr) external view returns (bool) {
+        return voters[_addr].isRegistered;
+    }
+
     /**
      * @notice Retrieves voter details by address.
      * @param _addr The address of the voter.
@@ -125,6 +139,15 @@ contract Voting is Ownable {
      */
     function getVoter(address _addr) external view onlyRegisteredVoter returns (Voter memory) {
         return voters[_addr];
+    }
+
+    /**
+     * @notice Retrieves all registered voter addresses.
+     * @dev Returns an array of Ethereum addresses currently registered as voters.
+     * @return An array of addresses representing all registered voters.
+     */
+    function getAllVoters() external view returns (address[] memory) {
+        return voterAddresses;
     }
 
     /**
@@ -136,7 +159,7 @@ contract Voting is Ownable {
         require(voters[_addr].hasVoted, "This voter has not voted yet.");
         return voters[_addr].votedProposalId;
     }
-    
+
     /**
      * @notice Retrieves a specific proposal by its ID.
      * @param _id The proposal ID.
@@ -146,7 +169,7 @@ contract Voting is Ownable {
         require(_id < proposals.length, "Proposal does not exist.");
         return proposals[_id];
     }
-    
+
     /**
      * @notice Retrieves all proposals.
      * @return An array of Proposal structs.
@@ -154,7 +177,36 @@ contract Voting is Ownable {
     function getAllProposals() public view returns (Proposal[] memory) {
         return proposals;
     }
-    
+
+    /**
+     * @notice Returns the list of winning proposals.
+     * @return An array of Proposal structs representing the winners.
+     */
+    function getWinners() public view returns (Proposal[] memory) {
+        require(workflowStatus == WorkflowStatus.VotesTallied, "Votes are not tallied yet.");
+        return winningProposals;
+    }
+
+    /**
+     * @notice Returns all past voting results.
+     * @return An array of VotingResult structs.
+     */
+    function getPastResults() public view returns (VotingResult[] memory) {
+        return pastResults;
+    }
+
+    /**
+     * @notice Checks if the caller has voted.
+     * @return A boolean indicating if the caller has voted.
+     */
+    function hasVoted() public view returns (bool) {
+        return voters[msg.sender].hasVoted;
+    }
+
+    ///------------------------------------------------------------------------
+    /// WRITE FUNCTIONS
+    ///------------------------------------------------------------------------
+
     /**
      * @notice Registers a voter.
      * @param _voterAddress The address of the voter to be registered.
@@ -163,9 +215,12 @@ contract Voting is Ownable {
         require(workflowStatus == WorkflowStatus.RegisteringVoters, "Registration of voters is not allowed at this stage.");
         require(!voters[_voterAddress].isRegistered, "Voter is already registered.");
         voters[_voterAddress].isRegistered = true;
+        voterAddresses.push(_voterAddress); // ✅ add to list
+
         emit VoterRegistered(_voterAddress);
     }
-    
+
+
     /**
      * @notice Removes a voter.
      * @param _voterAddress The address of the voter to be removed.
@@ -173,9 +228,18 @@ contract Voting is Ownable {
     function removeVoter(address _voterAddress) public onlyOwner {
         require(voters[_voterAddress].isRegistered, "Voter is not registered.");
         delete voters[_voterAddress];
+
+        for (uint i = 0; i < voterAddresses.length; i++) {
+            if (voterAddresses[i] == _voterAddress) {
+                voterAddresses[i] = voterAddresses[voterAddresses.length - 1];
+                voterAddresses.pop();
+                break;
+            }
+        }
+
         emit VoterRemoved(_voterAddress);
     }
-    
+
     /**
      * @notice Advances to the next workflow status.
      */
@@ -185,7 +249,7 @@ contract Voting is Ownable {
         workflowStatus = WorkflowStatus(uint(workflowStatus) + 1);
         emit WorkflowStatusChange(previousStatus, workflowStatus);
     }
-    
+
     /**
      * @notice Registers a new proposal.
      * @param _description The description of the proposal.
@@ -196,7 +260,7 @@ contract Voting is Ownable {
         proposals.push(Proposal(_description, 0));
         emit ProposalRegistered(proposals.length - 1);
     }
-    
+
     /**
      * @notice Allows a voter to cast a vote.
      * @param _proposalId The ID of the proposal to vote for.
@@ -205,14 +269,12 @@ contract Voting is Ownable {
         require(_proposalId < proposals.length, "Invalid proposal ID.");
         require(!voters[msg.sender].hasVoted, "You have already voted.");
         require(!voters[msg.sender].hasAbstained, "You have abstained and cannot vote.");
-
         proposals[_proposalId].voteCount++;
         voters[msg.sender].hasVoted = true;
         voters[msg.sender].votedProposalId = _proposalId;
-
         emit Voted(msg.sender, _proposalId);
     }
-    
+
     /**
      * @notice Allows a voter to update their vote.
      * @param _newProposalId The ID of the new proposal to vote for.
@@ -220,11 +282,9 @@ contract Voting is Ownable {
     function updateVote(uint _newProposalId) public onlyDuringVotingSession onlyRegisteredVoter {
         require(voters[msg.sender].hasVoted, "You have not voted yet.");
         require(_newProposalId < proposals.length, "Invalid proposal ID.");
-        
         proposals[voters[msg.sender].votedProposalId].voteCount--;
         proposals[_newProposalId].voteCount++;
         voters[msg.sender].votedProposalId = _newProposalId;
-        
         emit VoteUpdated(msg.sender, _newProposalId);
     }
 
@@ -234,10 +294,8 @@ contract Voting is Ownable {
     function abstain() public onlyDuringVotingSession onlyRegisteredVoter {
         require(!voters[msg.sender].hasVoted, "You have already voted.");
         require(!voters[msg.sender].hasAbstained, "You have already abstained.");
-
         voters[msg.sender].hasAbstained = true;
         abstentionsCount++;
-
         emit Abstained(msg.sender);
     }
 
@@ -269,25 +327,5 @@ contract Voting is Ownable {
         workflowStatus = WorkflowStatus.VotesTallied;
         emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
         emit VoteTallied(winningProposalId, proposals[winningProposalId].description, proposals[winningProposalId].voteCount);
-    }
-    
-    /**
-     * @notice Returns the list of winning proposals.
-     * @return An array of Proposal structs representing the winners.
-     */
-    function getWinners() public view returns (Proposal[] memory) {
-        require(workflowStatus == WorkflowStatus.VotesTallied, "Votes are not tallied yet.");
-        return winningProposals;
-    }
-    
-    function getPastResults() public view returns (VotingResult[] memory) {
-        return pastResults;
-    }
-    /**
-     * @notice Checks if a voter has voted.
-     * @return A boolean indicating if the voter has voted.
-     */
-    function hasVoted() public view returns (bool) {
-        return voters[msg.sender].hasVoted;
     }
 }

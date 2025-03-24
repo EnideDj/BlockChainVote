@@ -28,6 +28,7 @@ describe("Voting Smart Contract", function () {
 
         it("Should prevent duplicate registration", async function () {
             await voting.registerVoter(voter1.address);
+
             await expect(voting.registerVoter(voter1.address)).to.be.revertedWith(
                 "Voter is already registered."
             );
