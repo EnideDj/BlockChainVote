@@ -1,70 +1,59 @@
 'use client'
 
 import { useState } from 'react'
-import { writeContract, waitForTransactionReceipt, readContract } from '@wagmi/core'
+import { writeContract, readContract, waitForTransactionReceipt } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 
-export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
+export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
     const [address, setAddress] = useState('')
-    const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
-    const [errorMessage, setErrorMessage] = useState('')
+    const [status, setStatus] = useState<'idle' | 'pending'>('idle')
     const config = useConfig()
     const { address: connectedWallet } = useAccount()
     const { step } = useWorkflowStep()
 
     const isValidAddress = /^0x[a-fA-F0-9]{40}$/.test(address)
-    const canRemoveVoter = step === 0
+    const canAddVoter = step === 0
 
-    const handleRemove = async () => {
-        if (!isValidAddress) {
-            setStatus('error')
-            setErrorMessage('Adresse Ethereum invalide.')
-            return
-        }
-
-        if (!canRemoveVoter) {
-            setStatus('error')
-            setErrorMessage("Suppression non autorisée à cette étape.")
-            return
-        }
+    const handleAdd = async () => {
+        if (!isValidAddress) return console.log("Adresse Ethereum invalide.")
+        if (!canAddVoter) return console.log("Étape invalide pour ajouter un électeur.")
 
         try {
             setStatus('pending')
-            setErrorMessage('')
 
-            const isRegistered = await readContract(config, {
+            const alreadyRegistered = await readContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
                 functionName: 'isRegisteredVoter',
                 args: [address],
             })
 
-            if (!isRegistered) {
-                setStatus('error')
-                setErrorMessage("Cet électeur n’est pas inscrit.")
-                return
+            if (alreadyRegistered) {
+                setStatus('idle')
+                return console.log('Cet électeur est déjà inscrit.')
             }
+
+            console.log('📡 Envoi de la transaction...')
 
             const txHash = await writeContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
-                functionName: 'removeVoter',
+                functionName: 'registerVoter',
                 args: [address],
                 account: connectedWallet,
             })
 
             await waitForTransactionReceipt(config, { hash: txHash })
 
-            setStatus('success')
             setAddress('')
             onSuccess?.()
-        } catch (err) {
-            console.error('Erreur suppression électeur :', err)
-            setStatus('error')
-            setErrorMessage("Une erreur est survenue lors de la suppression.")
+        } catch (err: any) {
+            console.error('Erreur ajout électeur :', err)
+        } finally {
+            setStatus('idle')
         }
     }
 
@@ -75,7 +64,7 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md border"
         >
-            <h3 className="text-lg font-semibold mb-3">Retirer un électeur</h3>
+            <h3 className="text-lg font-semibold mb-3">👤 Ajouter un électeur</h3>
 
             <input
                 type="text"
@@ -86,21 +75,14 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
             />
 
             <button
-                onClick={handleRemove}
+                onClick={handleAdd}
                 className={`w-full px-4 py-2 rounded text-white ${
-                    status === 'pending' ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                    status === 'pending' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
                 disabled={status === 'pending'}
             >
-                {status === 'pending' ? 'Suppression en cours...' : 'Supprimer'}
+                {status === 'pending' ? '⏳ Ajout en cours...' : '➕ Ajouter'}
             </button>
-
-            {status === 'error' && (
-                <p className="text-red-600 mt-2">{errorMessage}</p>
-            )}
-            {status === 'success' && (
-                <p className="text-green-600 mt-2">Électeur supprimé avec succès !</p>
-            )}
         </motion.div>
     )
 }
