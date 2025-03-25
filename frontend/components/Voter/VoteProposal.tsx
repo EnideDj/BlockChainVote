@@ -14,46 +14,84 @@ type Proposal = {
 export default function VoteProposal() {
     const [proposals, setProposals] = useState<Proposal[]>([])
     const [selected, setSelected] = useState<number | null>(null)
+    const [hasVoted, setHasVoted] = useState(false)
+    const [votedProposalId, setVotedProposalId] = useState<number | null>(null)
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
     const config = useConfig()
     const { address } = useAccount()
 
     const fetchProposals = async () => {
+        const result = await readContract(config, {
+            address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
+            functionName: 'getAllProposals',
+            account: address,
+        })
+        setProposals(result as Proposal[])
+    }
+
+    const fetchVoterInfo = async () => {
         try {
-            const result = await readContract(config, {
+            const voter = await readContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
-                functionName: 'getAllProposals',
+                functionName: 'getVoter',
+                args: [address],
                 account: address,
-            })
+            }) as { isRegistered: boolean; hasVoted: boolean; hasAbstained: boolean; votedProposalId: bigint }
 
-            setProposals(result as Proposal[])
-        } catch {}
+            setHasVoted(voter.hasVoted)
+            setVotedProposalId(Number(voter.votedProposalId))
+        } catch (err) {
+            console.error('Erreur getVoter:', err)
+        }
     }
 
     const handleVote = async () => {
-        if (selected === null) return
-
+        if (selected === null || status === 'pending') return
         try {
             setStatus('pending')
 
-            const txHash = await writeContract(config, {
-                address: CONTRACT_ADDRESS,
-                abi: CONTRACT_ABI,
-                functionName: 'vote',
-                args: [selected],
-                account: address,
-            })
+            let txHash
+
+            if (!hasVoted) {
+                txHash = await writeContract(config, {
+                    address: CONTRACT_ADDRESS,
+                    abi: CONTRACT_ABI,
+                    functionName: 'vote',
+                    args: [selected],
+                    account: address,
+                })
+            } else if (votedProposalId !== selected) {
+                txHash = await writeContract(config, {
+                    address: CONTRACT_ADDRESS,
+                    abi: CONTRACT_ABI,
+                    functionName: 'updateVote',
+                    args: [selected],
+                    account: address,
+                })
+            } else {
+                setStatus('idle')
+                return
+            }
 
             await waitForTransactionReceipt(config, { hash: txHash })
+
+            await fetchProposals()
             setStatus('success')
-        } catch (error) {
+            setHasVoted(true)
+            setVotedProposalId(selected)
+            setTimeout(() => {
+                setStatus('idle')
+            }, 3000)
+        } catch {
             setStatus('error')
         }
     }
 
     useEffect(() => {
         fetchProposals()
+        fetchVoterInfo()
     }, [])
 
     return (
@@ -63,7 +101,7 @@ export default function VoteProposal() {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-3"> Voter pour une proposition</h2>
+            <h2 className="text-lg font-semibold mb-3">Voter pour une proposition</h2>
 
             <ul className="space-y-2 mb-4">
                 {proposals.map((proposal, index) => (
@@ -71,11 +109,15 @@ export default function VoteProposal() {
                         key={index}
                         onClick={() => setSelected(index)}
                         className={`cursor-pointer border p-3 rounded-md flex justify-between items-center ${
-                            selected === index ? 'bg-blue-100 border-blue-500' : 'hover:bg-gray-50'
+                            selected === index
+                                ? 'bg-blue-100 border-blue-500'
+                                : votedProposalId === index
+                                    ? 'bg-green-100 border-green-500'
+                                    : 'hover:bg-gray-50'
                         }`}
                     >
                         <span>{proposal.description}</span>
-                        <span className="text-sm text-gray-500">{proposal.voteCount.toString()} votes</span>
+                        <span className="text-sm text-gray-500">{proposal.voteCount.toString()} vote(s)</span>
                     </li>
                 ))}
             </ul>
@@ -85,7 +127,11 @@ export default function VoteProposal() {
                 disabled={selected === null || status === 'pending'}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
             >
-                {status === 'pending' ? '⏳ Vote en cours...' : 'Voter'}
+                {status === 'pending'
+                    ? '⏳ Vote en cours...'
+                    : hasVoted && votedProposalId !== selected
+                        ? 'Modifier mon vote'
+                        : 'Voter'}
             </button>
 
             {status === 'success' && (

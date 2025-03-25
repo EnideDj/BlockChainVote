@@ -8,48 +8,79 @@ import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import { useEffect, useState } from 'react'
 import { workflowSteps } from '@/utils/workflowSteps'
 import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
-import { useAccount, useConfig } from 'wagmi'
+import { useAccount, useConfig, usePublicClient } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
-import ProposalList from "@/components/Shared/ProposalList";
+import ProposalList from '@/components/Shared/ProposalList'
+import PastResults from '@/components/Admin/PastResults'
+import WinnerDisplay from "@/components/Shared/WinnerDisplay";
 
 export default function AdminDashboard() {
-    const { step, isLoading, refetch } = useWorkflowStep()
+    const { step, realStep, isLoading, refetch } = useWorkflowStep()
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
     const [refreshKey, setRefreshKey] = useState(0)
 
     const config = useConfig()
     const { address } = useAccount()
+    const publicClient = usePublicClient()
 
     const currentStep = workflowSteps[step]
     const nextStep = workflowSteps[step + 1]
+
+    const readCurrentWorkflowStatus = async (): Promise<number> => {
+        if (!publicClient) throw new Error('Public client not available')
+        const result = await publicClient.readContract({
+            address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
+            functionName: 'workflowStatus',
+        })
+        return Number(result)
+    }
 
     const handleNextStep = async () => {
         try {
             setStatus('pending')
 
-            const tx = await writeContract(config, {
+            let tx = await writeContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
                 functionName: 'nextWorkflowStatus',
                 account: address,
             })
-
             await waitForTransactionReceipt(config, { hash: tx })
-
             await refetch()
 
+            const updatedStatus = await readCurrentWorkflowStatus()
+            if (updatedStatus === 2) {
+                tx = await writeContract(config, {
+                    address: CONTRACT_ADDRESS,
+                    abi: CONTRACT_ABI,
+                    functionName: 'nextWorkflowStatus',
+                    account: address,
+                })
+                await waitForTransactionReceipt(config, { hash: tx })
+                await refetch()
+            }
+
+            if (updatedStatus === 4) {
+                const txTally = await writeContract(config, {
+                    address: CONTRACT_ADDRESS,
+                    abi: CONTRACT_ABI,
+                    functionName: 'tallyVotes',
+                    account: address,
+                })
+                await waitForTransactionReceipt(config, { hash: txTally })
+                await refetch()
+            }
+
             setStatus('success')
-        } catch (err) {
-            console.error('Erreur passage étape :', err)
+        } catch  {
             setStatus('error')
         } finally {
             setTimeout(() => setStatus('idle'), 3000)
         }
     }
 
-    const triggerRefresh = () => {
-        setRefreshKey((prev) => prev + 1)
-    }
+    const triggerRefresh = () => setRefreshKey((prev) => prev + 1)
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -62,7 +93,7 @@ export default function AdminDashboard() {
 
     return (
         <motion.section
-            key={step}
+            key={realStep}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -78,7 +109,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500">{currentStep.description}</p>
                 </div>
 
-                {step === 0 && (
+                {realStep === 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <AddVoter onSuccess={triggerRefresh} />
                         <RemoveVoter onSuccess={triggerRefresh} />
@@ -87,14 +118,23 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
-                {step === 1 && (
+
+                {realStep === 1 && (
                     <div className="mt-6">
                         <ProposalList />
                     </div>
                 )}
-                {step == 2 && (
+
+                {realStep === 3 && (
                     <div className="p-4 border rounded text-gray-700 bg-gray-50">
-                        ⚠️ Aucune action n’est disponible à cette étape pour l’admin.
+                        La session de vote est en cours. Les électeurs peuvent voter.
+                        <ProposalList />
+                    </div>
+                )}
+
+                {realStep === 4 && (
+                    <div className="space-y-2">
+                        <WinnerDisplay />
                     </div>
                 )}
 
@@ -108,7 +148,7 @@ export default function AdminDashboard() {
                             disabled={status === 'pending'}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
                         >
-                            {status === 'pending' ? '⏳ Passage en cours...' : '➡️ Passer à l’étape suivante'}
+                            {status === 'pending' ? '⏳ Passage en cours...' : 'Passer à l’étape suivante'}
                         </button>
                         {status === 'success' && (
                             <p className="text-green-600 mt-2">Étape passée avec succès !</p>

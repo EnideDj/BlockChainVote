@@ -16,7 +16,7 @@ export default function AdminPage() {
                 transition={{ duration: 0.3 }}
                 className="text-3xl font-bold"
             >
-                🧑‍💼 Interface Administrateur
+                Interface Administrateur
             </motion.h1>
 
             {!isAdmin ? (

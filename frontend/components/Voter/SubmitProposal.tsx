@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAccount, useConfig } from 'wagmi'
-import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
+import {writeContract, waitForTransactionReceipt, readContract} from '@wagmi/core'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 
@@ -30,6 +30,14 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             setStatus('success')
             setDescription('')
             onSuccess?.()
+
+            const total = await readContract(config, {
+                address: CONTRACT_ADDRESS,
+                abi: CONTRACT_ABI,
+                functionName: 'getAllProposals',
+                account: address,
+            })
+
         } catch {
             setStatus('error')
         }
@@ -42,7 +50,7 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-2">📝 Soumettre une proposition</h2>
+            <h2 className="text-lg font-semibold mb-2">Soumettre une proposition</h2>
 
             <input
                 type="text"
@@ -57,7 +65,7 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
                 disabled={status === 'pending'}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
             >
-                {status === 'pending' ? '⏳ Envoi...' : '🚀 Soumettre'}
+                {status === 'pending' ? '⏳ Envoi...' : 'Soumettre'}
             </button>
 
             {status === 'success' && (

@@ -10,7 +10,7 @@ type Proposal = {
     voteCount: bigint
 }
 
-export default function ProposalList() {
+export default function ProposalList({ refreshKey }: { refreshKey?: number }) {
     const [proposals, setProposals] = useState<Proposal[]>([])
     const [loading, setLoading] = useState(true)
     const config = useConfig()
@@ -20,29 +20,16 @@ export default function ProposalList() {
         try {
             setLoading(true)
 
-            const total = await readContract(config, {
+            const list = await readContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
-                functionName: 'getProposalsCount',
+                functionName: 'getAllProposals',
                 account: address,
             })
 
-            const count = Number(total)
-            const temp: Proposal[] = []
-
-            for (let i = 0; i < count; i++) {
-                const proposal = await readContract(config, {
-                    address: CONTRACT_ADDRESS,
-                    abi: CONTRACT_ABI,
-                    functionName: 'proposals',
-                    args: [i],
-                    account: address,
-                })
-                temp.push(proposal as Proposal)
-            }
-
-            setProposals(temp)
-        } catch {
+            console.log('📋 Propositions fetchées :', list)
+            setProposals(list as Proposal[])
+        } catch  {
         } finally {
             setLoading(false)
         }
@@ -50,12 +37,7 @@ export default function ProposalList() {
 
     useEffect(() => {
         fetchProposals()
-        const interval = setInterval(() => {
-            fetchProposals()
-        }, 3000)
-
-        return () => clearInterval(interval)
-    }, [])
+    }, [refreshKey])
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-md my-4">
@@ -72,7 +54,9 @@ export default function ProposalList() {
                             className="border p-3 rounded-md bg-gray-50 flex justify-between items-center"
                         >
                             <span>{proposal.description}</span>
-                            <span className="text-sm text-gray-600">{proposal.voteCount.toString()} votes</span>
+                            <span className="text-sm text-gray-600">
+                                {proposal.voteCount.toString()} vote(s)
+                            </span>
                         </li>
                     ))}
                 </ul>
