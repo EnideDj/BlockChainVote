@@ -6,7 +6,7 @@ import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 
-export default function SubmitProposal() {
+export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }) {
     const [description, setDescription] = useState('')
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
     const config = useConfig()
@@ -29,6 +29,7 @@ export default function SubmitProposal() {
             await waitForTransactionReceipt(config, { hash: txHash })
             setStatus('success')
             setDescription('')
+            onSuccess?.()
         } catch {
             setStatus('error')
         }

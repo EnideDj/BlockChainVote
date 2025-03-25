@@ -50,15 +50,20 @@ export default function ProposalList() {
 
     useEffect(() => {
         fetchProposals()
+        const interval = setInterval(() => {
+            fetchProposals()
+        }, 3000)
+
+        return () => clearInterval(interval)
     }, [])
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-md my-4">
-            <h2 className="text-xl font-bold mb-3">📋 Propositions enregistrées</h2>
+            <h2 className="text-xl font-bold mb-3">Propositions enregistrées</h2>
             {loading ? (
                 <p className="text-gray-500">Chargement...</p>
             ) : proposals.length === 0 ? (
-                <p className="text-gray-400">Aucune proposition disponible.</p>
+                <p className="text-gray-400">Aucune proposition pour le moment.</p>
             ) : (
                 <ul className="space-y-2">
                     {proposals.map((proposal, index) => (

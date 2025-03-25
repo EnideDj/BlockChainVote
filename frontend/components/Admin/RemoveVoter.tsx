@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { writeContract, waitForTransactionReceipt, readContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
@@ -66,6 +66,14 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
             setErrorMessage("Une erreur est survenue lors de la suppression.")
         }
     }
+
+    // 🧽 Auto-hide le message de succès
+    useEffect(() => {
+        if (status === 'success' || status === 'error') {
+            const timer = setTimeout(() => setStatus('idle'), 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [status])
 
     return (
         <motion.div

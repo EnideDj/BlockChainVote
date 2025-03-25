@@ -63,7 +63,7 @@ export default function VoteProposal() {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-3">🗳️ Voter pour une proposition</h2>
+            <h2 className="text-lg font-semibold mb-3"> Voter pour une proposition</h2>
 
             <ul className="space-y-2 mb-4">
                 {proposals.map((proposal, index) => (

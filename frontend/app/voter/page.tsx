@@ -13,7 +13,7 @@ export default function VoterPage() {
     if (!isConnected) {
         return (
             <div className="p-6 text-center">
-                <h2 className="text-xl font-bold mb-2">🔐 Wallet requis</h2>
+                <h2 className="text-xl font-bold mb-2">Wallet requis</h2>
                 <p className="text-gray-600">Veuillez connecter votre wallet pour accéder à cet espace.</p>
             </div>
         )
@@ -35,7 +35,7 @@ export default function VoterPage() {
                 transition={{ duration: 0.3 }}
                 className="p-6 text-center text-red-600 font-medium"
             >
-                ❌ Vous n’êtes pas inscrit sur la liste des électeurs. Veuillez contacter l’administrateur.
+                Vous n’êtes pas inscrit sur la liste des électeurs. Veuillez contacter l’administrateur.
             </motion.div>
         )
     }
@@ -48,7 +48,7 @@ export default function VoterPage() {
                 transition={{ duration: 0.3 }}
                 className="text-3xl font-bold"
             >
-                🗳️ Espace Électeur
+                Espace Électeur
             </motion.h1>
 
             <WorkflowStatus />

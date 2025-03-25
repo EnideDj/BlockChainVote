@@ -1,21 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useWorkflowStep } from '@/hooks/useWorkflowStep'
-import { workflowSteps } from '@/utils/workflowSteps'
+import { useEffect, useState } from 'react'
 import { waitForTransactionReceipt, writeContract, readContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
+import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
+import { workflowSteps } from '@/utils/workflowSteps'
 import { motion } from 'framer-motion'
-import {
-    Users,
-    FilePlus,
-    Ban,
-    Vote,
-    Lock,
-    CheckCircle2,
-} from 'lucide-react'
-import { useState } from 'react'
+import { Users, FilePlus, Ban, Vote, Lock, CheckCircle2 } from 'lucide-react'
 
 const iconsMap = {
     Users,
@@ -32,7 +24,7 @@ const Button = ({
                 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
         {...props}
-        className={`bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-4 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed`}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-4 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
     >
         {children}
     </button>
@@ -63,26 +55,20 @@ export default function WorkflowManager() {
             })
 
             await waitForTransactionReceipt(config, { hash: tx })
-
             await refetch()
 
-            const updatedStep = await readContract(config, {
-                address: CONTRACT_ADDRESS,
-                abi: CONTRACT_ABI,
-                functionName: 'workflowStatus',
-            })
-            console.log("Nouvelle étape après transaction :", Number(updatedStep))
-
             setStatus('success')
-            setTimeout(() => setStatus('idle'), 3000)
-        } catch {
+        } catch (err) {
+            console.error('❌ Erreur passage étape :', err)
             setStatus('error')
-            setTimeout(() => setStatus('idle'), 5000)
+        } finally {
+            setTimeout(() => setStatus('idle'), 3000)
         }
     }
 
     return (
         <motion.div
+            key={step}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -92,8 +78,7 @@ export default function WorkflowManager() {
 
             <ul className="space-y-4 mb-6">
                 {workflowSteps.map((stepItem, index) => {
-                    const Icon =
-                        iconsMap[stepItem.icon as keyof typeof iconsMap] || Users
+                    const Icon = iconsMap[stepItem.icon as keyof typeof iconsMap] || Users
                     const isActive = index === step
                     const isDone = index < step
 

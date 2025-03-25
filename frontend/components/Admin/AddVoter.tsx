@@ -79,9 +79,11 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             <button
                 onClick={handleAdd}
                 className={`w-full px-4 py-2 rounded text-white ${
-                    status === 'pending' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    status === 'pending' || !canAddVoter
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
                 }`}
-                disabled={status === 'pending'}
+                disabled={status === 'pending' || !canAddVoter}
             >
                 {status === 'pending' ? '⏳ Ajout en cours...' : '➕ Ajouter'}
             </button>
@@ -91,6 +93,11 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             )}
             {status === 'success' && (
                 <p className="text-green-600 mt-2">Électeur ajouté avec succès !</p>
+            )}
+            {!canAddVoter && (
+                <p className="text-yellow-600 mt-2 text-sm">
+                    Vous ne pouvez plus ajouter d’électeurs à cette étape.
+                </p>
             )}
         </motion.div>
     )

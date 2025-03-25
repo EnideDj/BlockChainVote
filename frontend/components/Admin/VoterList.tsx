@@ -7,7 +7,7 @@ import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
 
-export default function VoterList() {
+export default function VoterList({ refresh }: { refresh: number }) {
     const config = useConfig()
     const { address: admin } = useAccount()
     const [voters, setVoters] = useState<string[]>([])
@@ -33,13 +33,9 @@ export default function VoterList() {
         }
     }
 
-    const confirmRemove = (addr: string) => {
-        setConfirming(addr)
-    }
-
-    const cancelConfirm = () => {
-        setConfirming(null)
-    }
+    useEffect(() => {
+        fetchVoters()
+    }, [refresh])
 
     const handleRemove = async (addr: string) => {
         setRemoving(addr)
@@ -54,16 +50,12 @@ export default function VoterList() {
 
             await waitForTransactionReceipt(config, { hash: tx })
             setVoters((prev) => prev.filter((v) => v !== addr))
-        } catch  {
-        } finally {
+        } catch {}
+        finally {
             setRemoving(null)
             setConfirming(null)
         }
     }
-
-    useEffect(() => {
-        fetchVoters()
-    }, [])
 
     return (
         <motion.div
@@ -73,19 +65,15 @@ export default function VoterList() {
             className="bg-white p-4 rounded-xl shadow-md border"
         >
             <h3 className="text-lg font-semibold mb-3">📋 Liste des électeurs</h3>
-
             {loading && <p className="text-gray-500">⏳ Chargement...</p>}
             {error && <p className="text-red-600">{error}</p>}
-
             {!loading && voters.length === 0 && (
                 <p className="text-gray-500">Aucun électeur enregistré.</p>
             )}
-
             <ul className="divide-y text-sm">
                 {voters.map((addr) => (
                     <li key={addr} className="flex justify-between items-center py-2">
                         <span className="truncate">{addr}</span>
-
                         {confirming === addr ? (
                             <div className="flex gap-2 text-xs">
                                 <button
@@ -96,7 +84,7 @@ export default function VoterList() {
                                     Oui
                                 </button>
                                 <button
-                                    onClick={cancelConfirm}
+                                    onClick={() => setConfirming(null)}
                                     className="text-gray-500 hover:underline"
                                 >
                                     Annuler
@@ -104,7 +92,7 @@ export default function VoterList() {
                             </div>
                         ) : (
                             <button
-                                onClick={() => confirmRemove(addr)}
+                                onClick={() => setConfirming(addr)}
                                 className="text-red-600 hover:text-red-800"
                                 title="Supprimer cet électeur"
                             >
