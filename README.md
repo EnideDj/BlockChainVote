@@ -90,8 +90,6 @@ npm run dev
 
 - Connexion avec le smart contract.
 
-- Affichage en temps réel des données de la blockchain.
-
 - Déroulement du Vote
 
 - Inscription des électeurs : l’administrateur ajoute des électeurs à la liste blanche.
@@ -120,6 +118,5 @@ npm run dev
 
 Vidéo de démonstration : []
 
-DApp Déployée : []
 
 
