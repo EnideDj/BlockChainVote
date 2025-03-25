@@ -62,17 +62,13 @@ Ce projet vise la création d’une application décentralisée (DApp) permettan
 
 ### Détails Techniques
 
-- ** Langage Smart Contract : ** Solidity
+- **Langage Smart Contract :** Solidity
 
-- ** Frameworks et Outils : ** Hardhat / Truffle
+- **Frameworks et Outils :** Hardhat 
 
-- ** Frontend : ** Next.js, TypeScript, Ethers.js
+- **Frontend :** Next.js, TypeScript, Ethers.js
 
-- ** Base de données : ** Aucune (tout est stocké on-chain)
-
-- ** Déploiement : ** Vercel / Heroku / AWS
-
-- ** Tests : ** Chai, Mocha, Hardhat Test Environment
+- **Tests :** Hardhat Test Environment
 
 ## Liens Importants
 
