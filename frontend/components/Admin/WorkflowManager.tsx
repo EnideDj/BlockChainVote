@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import { workflowSteps } from '@/utils/workflowSteps'
-import { waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import { waitForTransactionReceipt, writeContract, readContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
@@ -46,6 +47,9 @@ export default function WorkflowManager() {
     const current = workflowSteps[step]
     const next = workflowSteps[step + 1]
 
+    useEffect(() => {
+        refetch()
+    }, [refetch])
 
     const handleNextStep = async () => {
         try {
@@ -60,13 +64,20 @@ export default function WorkflowManager() {
 
             await waitForTransactionReceipt(config, { hash: tx })
 
-            await new Promise((res) => setTimeout(res, 1000))
             await refetch()
 
+            const updatedStep = await readContract(config, {
+                address: CONTRACT_ADDRESS,
+                abi: CONTRACT_ABI,
+                functionName: 'workflowStatus',
+            })
+            console.log("Nouvelle étape après transaction :", Number(updatedStep))
+
             setStatus('success')
-        } catch (err) {
-            console.error('Erreur passage étape :', err)
+            setTimeout(() => setStatus('idle'), 3000)
+        } catch {
             setStatus('error')
+            setTimeout(() => setStatus('idle'), 5000)
         }
     }
 

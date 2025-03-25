@@ -9,12 +9,21 @@ import AbstainVote from './AbstainVote'
 import UpdateVote from './UpdateVote'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import VoterList from './VoterList'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AdminDashboard() {
-    const { step, isLoading } = useWorkflowStep()
+    const { step, isLoading, refetch } = useWorkflowStep()
     const [refreshKey, setRefreshKey] = useState(0)
-    const triggerRefresh = () => setRefreshKey(prev => prev + 1)
+
+    useEffect(() => {
+        refetch()
+        setRefreshKey((prev) => prev + 1)
+    }, [step])
+
+    const triggerRefresh = () => {
+        setRefreshKey((prev) => prev + 1)
+        refetch()
+    }
 
     if (isLoading) return <p>⏳ Chargement...</p>
 
@@ -24,6 +33,7 @@ export default function AdminDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="space-y-6"
+            key={refreshKey}
         >
             {step === 0 && (
                 <div className="space-y-2">
@@ -46,7 +56,7 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            <WorkflowManager />
+            <WorkflowManager key={refreshKey} />
 
             {step === 5 && (
                 <div className="space-y-2">

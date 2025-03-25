@@ -28,7 +28,6 @@ export default function PastResultsPage() {
 
             setResults(data as Result[])
         } catch (err) {
-            console.error('Erreur lors de la récupération des résultats :', err)
         } finally {
             setLoading(false)
         }

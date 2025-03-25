@@ -215,7 +215,7 @@ contract Voting is Ownable {
         require(workflowStatus == WorkflowStatus.RegisteringVoters, "Registration of voters is not allowed at this stage.");
         require(!voters[_voterAddress].isRegistered, "Voter is already registered.");
         voters[_voterAddress].isRegistered = true;
-        voterAddresses.push(_voterAddress); // ✅ add to list
+        voterAddresses.push(_voterAddress);
 
         emit VoterRegistered(_voterAddress);
     }
@@ -311,12 +311,12 @@ contract Voting is Ownable {
                 highestCount = proposals[i].voteCount;
                 delete winningProposals;
                 winningProposals.push(proposals[i]);
+                winningProposalId = i;
             } else if (proposals[i].voteCount == highestCount && highestCount > 0) {
                 winningProposals.push(proposals[i]);
             }
         }
 
-        winningProposalId = winningProposals.length > 0 ? proposals.length - 1 : 0;
         pastResults.push(VotingResult({
             winningProposalId: winningProposalId,
             winningProposalDescription: proposals[winningProposalId].description,

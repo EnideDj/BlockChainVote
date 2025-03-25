@@ -20,20 +20,15 @@ export default function PastResults() {
     const [loading, setLoading] = useState(true)
 
     const fetchResults = async () => {
-        try {
-            const data = await readContract(config, {
-                address: CONTRACT_ADDRESS,
-                abi: CONTRACT_ABI,
-                functionName: 'getPastResults',
-                account: address,
-            })
+        const data = await readContract(config, {
+            address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
+            functionName: 'getPastResults',
+            account: address,
+        })
 
-            setResults(data as Result[])
-        } catch (err) {
-            console.error('Erreur historique des votes :', err)
-        } finally {
-            setLoading(false)
-        }
+        setResults(data as Result[])
+        setLoading(false)
     }
 
     useEffect(() => {
@@ -60,7 +55,7 @@ export default function PastResults() {
                             key={idx}
                             className="p-3 border border-gray-200 rounded-md bg-gray-50"
                         >
-                            <p className="font-medium">📝 {res.winningProposalDescription}</p>
+                            <p className="font-medium">{res.winningProposalDescription}</p>
                             <p className="text-sm text-gray-600">
                                 🏆 {res.winningVoteCount.toString()} vote(s) – {res.totalProposals.toString()} propositions
                             </p>

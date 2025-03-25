@@ -9,7 +9,6 @@ describe("Voting Smart Contract", function () {
         [owner, voter1, voter2, voter3] = await ethers.getSigners();
         const VotingFactory = await ethers.getContractFactory("Voting");
         voting = await VotingFactory.deploy();
-        await voting.waitForDeployment();
     });
 
     describe("Deployment", function () {
@@ -19,48 +18,70 @@ describe("Voting Smart Contract", function () {
     });
 
     describe("Voter Registration", function () {
-        it("Should allow owner to register voters", async function () {
-            await voting.registerVoter(owner.address);
+        it("Should allow owner to register voters during the registering stage", async function () {
+            const [owner, voter1] = await ethers.getSigners();
+
+            expect(await voting.workflowStatus()).to.equal(0);
+
             await voting.registerVoter(voter1.address);
+
             const voter = await voting.getVoter(voter1.address);
-            expect(voter.isRegistered).to.be.true;
+            expect(voter.isRegistered).to.equal(true);
         });
 
-        it("Should prevent duplicate registration", async function () {
-            await voting.registerVoter(voter1.address);
+        it("Should prevent registering voters when not in the RegisteringVoters stage", async function () {
+            const [owner, voter1] = await ethers.getSigners();
+
+            await voting.nextWorkflowStatus();
 
             await expect(voting.registerVoter(voter1.address)).to.be.revertedWith(
-                "Voter is already registered."
+                "Registration of voters is not allowed at this stage."
             );
         });
     });
 
     describe("Proposal Registration", function () {
+        let owner, voter1, voter2;
+
         beforeEach(async function () {
-            await voting.registerVoter(owner.address);
+            [owner, voter1, voter2] = await ethers.getSigners();
+
             await voting.registerVoter(voter1.address);
+
             await voting.nextWorkflowStatus();
         });
 
         it("Should allow a registered voter to submit a proposal", async function () {
-            await voting.connect(voter1).registerProposal("Proposal 1");
+            await voting.connect(voter1).registerProposal("New Proposal");
+
             const proposal = await voting.getOneProposal(0);
-            expect(proposal.description).to.equal("Proposal 1");
+            expect(proposal.description).to.equal("New Proposal");
         });
 
         it("Should prevent non-registered voter from submitting a proposal", async function () {
             await expect(
-                voting.connect(voter2).registerProposal("Proposal 2")
+                voting.connect(voter2).registerProposal("Proposal from non-registered voter")
             ).to.be.revertedWith("You are not registered as a voter.");
+        });
+
+        it("Should prevent submitting proposals when not in ProposalsRegistrationStarted stage", async function () {
+            await voting.nextWorkflowStatus();
+
+            await expect(
+                voting.connect(voter1).registerProposal("Proposal when not allowed")
+            ).to.be.revertedWith("Proposals are not allowed yet.");
         });
     });
 
     describe("Voting Process", function () {
         beforeEach(async function () {
-            await voting.registerVoter(owner.address);
+            const VotingFactory = await ethers.getContractFactory("Voting");
+            voting = await VotingFactory.deploy();
+            await voting.waitForDeployment();
+
             await voting.registerVoter(voter1.address);
             await voting.registerVoter(voter2.address);
-            await voting.registerVoter(voter3.address);
+
             await voting.nextWorkflowStatus();
             await voting.connect(voter1).registerProposal("Proposal 1");
             await voting.nextWorkflowStatus();
@@ -68,61 +89,180 @@ describe("Voting Smart Contract", function () {
         });
 
         it("Should allow registered voters to vote", async function () {
-            await voting.connect(voter1).vote(0);
-            const voter = await voting.getVoter(voter1.address);
-            expect(voter.hasVoted).to.equal(true);
+            await expect(voting.connect(voter1).vote(0))
+                .to.emit(voting, "Voted")
+                .withArgs(voter1.address, 0);
         });
 
         it("Should prevent double voting", async function () {
-            await voting.vote(0);
-            await expect(voting.vote(0)).to.be.revertedWith("You have already voted.");
+            await voting.connect(voter1).vote(0);
+            await expect(voting.connect(voter1).vote(0))
+                .to.be.revertedWith("You have already voted.");
         });
 
-        it("Should allow abstention", async function () {
-            await voting.connect(voter1).abstain();
-            const voter = await voting.getVoter(voter1.address);
-            expect(voter.hasAbstained).to.equal(true);
+        it("Should allow voters to abstain", async function () {
+            await expect(voting.connect(voter2).abstain())
+                .to.emit(voting, "Abstained")
+                .withArgs(voter2.address);
         });
-    });
 
-    describe("Vote Tallying", function () {
-        beforeEach(async function () {
-            await voting.registerVoter(voter1.address);
-            await voting.registerVoter(voter2.address);
-            await voting.nextWorkflowStatus(); 
-            await voting.connect(voter1).registerProposal("Proposal 1");
-            await voting.connect(voter2).registerProposal("Proposal 2");
-            await voting.nextWorkflowStatus(); 
-            await voting.nextWorkflowStatus(); 
-            await voting.connect(voter1).vote(0); 
-            await voting.connect(voter2).vote(1);
+        it("Should prevent voting when not in VotingSessionStarted stage", async function () {
             await voting.nextWorkflowStatus();
+            await expect(voting.connect(voter1).vote(0))
+                .to.be.revertedWith("Voting session is not active.");
         });
-        
-        it("Should tally votes and determine the winner", async function () {
-            await voting.tallyVotes();
-            const winners = await voting.getWinners();
-            expect(winners.length).to.be.at.least(1);
-        });
-    });
 
-    describe("History of Votes", function () {
-        beforeEach(async function () {
-            await voting.registerVoter(voter1.address);
-            await voting.registerVoter(voter2.address);
-            await voting.nextWorkflowStatus();
-            await voting.connect(voter1).registerProposal("Proposal 1");
-            await voting.nextWorkflowStatus();
-            await voting.nextWorkflowStatus();
+        it("Should allow voters to update their vote", async function () {
             await voting.connect(voter1).vote(0);
             await voting.connect(voter2).vote(0);
+            await expect(voting.connect(voter1).updateVote(0))
+                .to.emit(voting, "VoteUpdated")
+                .withArgs(voter1.address, 0);
+
+            const voter = await voting.getVoter(voter1.address);
+            expect(voter.votedProposalId).to.equal(0);
+        });
+
+        it("Should prevent abstention after voting", async function () {
+            await voting.connect(voter1).vote(0);
+            await expect(voting.connect(voter1).abstain())
+                .to.be.revertedWith("You have already voted.");
+        });
+    });
+
+    describe("Workflow Transitions", function () {
+        it("Should go through the entire workflow correctly", async function () {
+            const [owner] = await ethers.getSigners();
+
+            expect(await voting.workflowStatus()).to.equal(0);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.emit(voting, "WorkflowStatusChange")
+                .withArgs(0, 1);
+            expect(await voting.workflowStatus()).to.equal(1);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.emit(voting, "WorkflowStatusChange")
+                .withArgs(1, 2);
+            expect(await voting.workflowStatus()).to.equal(2);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.emit(voting, "WorkflowStatusChange")
+                .withArgs(2, 3);
+            expect(await voting.workflowStatus()).to.equal(3);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.emit(voting, "WorkflowStatusChange")
+                .withArgs(3, 4);
+            expect(await voting.workflowStatus()).to.equal(4);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.emit(voting, "WorkflowStatusChange")
+                .withArgs(4, 5);
+            expect(await voting.workflowStatus()).to.equal(5);
+
+            await expect(voting.nextWorkflowStatus())
+                .to.be.revertedWith("Cannot proceed after final tally.");
+        });
+    });
+
+    describe("Tallying Votes", function () {
+        let voter1, voter2;
+
+        beforeEach(async function () {
+            [owner, voter1, voter2] = await ethers.getSigners();
+
+            await voting.registerVoter(voter1.address);
+            await voting.registerVoter(voter2.address);
+
             await voting.nextWorkflowStatus();
+            await voting.connect(voter1).registerProposal("Proposal 1");
+            await voting.connect(voter2).registerProposal("Proposal 2");
+
+            await voting.nextWorkflowStatus();
+            await voting.nextWorkflowStatus();
+
+            await voting.connect(voter1).vote(0);
+            await voting.connect(voter2).vote(1);
+
+            await voting.nextWorkflowStatus();
+        });
+
+        it("Should tally votes correctly", async function () {
+            await expect(voting.tallyVotes())
+                .to.emit(voting, "VoteTallied");
+
+            const winners = await voting.getWinners();
+            expect(winners.length).to.be.equal(2);
+
+            const pastResults = await voting.getPastResults();
+            expect(pastResults.length).to.equal(1);
+            expect(pastResults[0].totalProposals).to.equal(2);
+        });
+
+        it("Should set the correct winning proposal ID after tally", async function () {
+            await voting.tallyVotes();
+            const winningProposalId = await voting.winningProposalId();
+            expect(Number(winningProposalId)).to.be.oneOf([0, 1]);
+        });
+    });
+
+    describe("Removing Registered Voter", function () {
+        let voter1;
+
+        beforeEach(async function () {
+            [owner, voter1] = await ethers.getSigners();
+            await voting.registerVoter(voter1.address);
+        });
+
+        it("Should allow owner to remove a voter", async function () {
+            await expect(voting.removeVoter(voter1.address))
+                .to.emit(voting, "VoterRemoved")
+                .withArgs(voter1.address);
+
+            const voter = await voting.isRegisteredVoter(voter1.address);
+            expect(voter).to.be.false;
+        });
+
+        it("Should prevent removed voter from participating", async function () {
+            await voting.removeVoter(voter1.address);
+            await voting.nextWorkflowStatus();
+
+            await expect(voting.connect(voter1).registerProposal("Invalid Proposal"))
+                .to.be.revertedWith("You are not registered as a voter.");
+        });
+
+        it("Should correctly update voterAddresses after removal", async function () {
+            await voting.removeVoter(voter1.address);
+            const votersList = await voting.getAllVoters();
+            expect(votersList).to.not.include(voter1.address);
+        });
+    });
+
+    describe("Historical Results", function () {
+        let voter1;
+
+        beforeEach(async function () {
+            [owner, voter1] = await ethers.getSigners();
+
+            await voting.registerVoter(voter1.address);
+
+            await voting.nextWorkflowStatus();
+            await voting.connect(voter1).registerProposal("Historical Proposal");
+            await voting.nextWorkflowStatus();
+            await voting.nextWorkflowStatus();
+
+            await voting.connect(voter1).vote(0);
+            await voting.nextWorkflowStatus();
+
             await voting.tallyVotes();
         });
 
-        it("Should store past results", async function () {
-            const pastResults = await voting.getPastResults();
-            expect(pastResults.length).to.be.greaterThan(0);
+        it("Should store past voting results", async function () {
+            const results = await voting.getPastResults();
+            expect(results.length).to.equal(1);
+            expect(results[0].winningVoteCount).to.equal(1);
+            expect(results[0].winningProposalDescription).to.equal("Historical Proposal");
         });
     });
 });

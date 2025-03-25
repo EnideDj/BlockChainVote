@@ -26,8 +26,7 @@ export default function VoterList() {
                 account: admin,
             })
             setVoters(data as string[])
-        } catch (err: any) {
-            console.error('Erreur récupération des électeurs', err)
+        } catch {
             setError("Impossible de récupérer les électeurs.")
         } finally {
             setLoading(false)
@@ -55,8 +54,7 @@ export default function VoterList() {
 
             await waitForTransactionReceipt(config, { hash: tx })
             setVoters((prev) => prev.filter((v) => v !== addr))
-        } catch (err) {
-            console.error("Erreur suppression électeur :", err)
+        } catch  {
         } finally {
             setRemoving(null)
             setConfirming(null)

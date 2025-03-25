@@ -61,8 +61,7 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
             setStatus('success')
             setAddress('')
             onSuccess?.()
-        } catch (err) {
-            console.error('Erreur suppression électeur :', err)
+        } catch {
             setStatus('error')
             setErrorMessage("Une erreur est survenue lors de la suppression.")
         }

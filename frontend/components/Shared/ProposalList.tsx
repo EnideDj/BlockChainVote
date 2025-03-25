@@ -42,8 +42,7 @@ export default function ProposalList() {
             }
 
             setProposals(temp)
-        } catch (err) {
-            console.error('Erreur lecture propositions :', err)
+        } catch {
         } finally {
             setLoading(false)
         }

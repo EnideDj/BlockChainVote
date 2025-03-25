@@ -27,8 +27,7 @@ export default function WinnerDisplay() {
             })
 
             setWinners(data as Proposal[])
-        } catch (err) {
-            console.error('Erreur chargement des gagnants :', err)
+        } catch {
         } finally {
             setLoading(false)
         }

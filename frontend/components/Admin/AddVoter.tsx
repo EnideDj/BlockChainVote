@@ -9,7 +9,8 @@ import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 
 export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
     const [address, setAddress] = useState('')
-    const [status, setStatus] = useState<'idle' | 'pending'>('idle')
+    const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+    const [errorMessage, setErrorMessage] = useState('')
     const config = useConfig()
     const { address: connectedWallet } = useAccount()
     const { step } = useWorkflowStep()
@@ -18,11 +19,12 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
     const canAddVoter = step === 0
 
     const handleAdd = async () => {
-        if (!isValidAddress) return console.log("Adresse Ethereum invalide.")
-        if (!canAddVoter) return console.log("Étape invalide pour ajouter un électeur.")
+        if (!isValidAddress) return setErrorMessage("Adresse Ethereum invalide.")
+        if (!canAddVoter) return setErrorMessage("Étape invalide pour ajouter un électeur.")
 
         try {
             setStatus('pending')
+            setErrorMessage('')
 
             const alreadyRegistered = await readContract(config, {
                 address: CONTRACT_ADDRESS,
@@ -32,11 +34,9 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             })
 
             if (alreadyRegistered) {
-                setStatus('idle')
-                return console.log('Cet électeur est déjà inscrit.')
+                setStatus('error')
+                return setErrorMessage('Cet électeur est déjà inscrit.')
             }
-
-            console.log('📡 Envoi de la transaction...')
 
             const txHash = await writeContract(config, {
                 address: CONTRACT_ADDRESS,
@@ -49,11 +49,13 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             await waitForTransactionReceipt(config, { hash: txHash })
 
             setAddress('')
+            setStatus('success')
             onSuccess?.()
         } catch (err: any) {
-            console.error('Erreur ajout électeur :', err)
+            setStatus('error')
+            setErrorMessage(err?.message || 'Erreur inattendue.')
         } finally {
-            setStatus('idle')
+            setTimeout(() => setStatus('idle'), 3000)
         }
     }
 
@@ -83,6 +85,13 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             >
                 {status === 'pending' ? '⏳ Ajout en cours...' : '➕ Ajouter'}
             </button>
+
+            {status === 'error' && (
+                <p className="text-red-600 mt-2">{errorMessage}</p>
+            )}
+            {status === 'success' && (
+                <p className="text-green-600 mt-2">Électeur ajouté avec succès !</p>
+            )}
         </motion.div>
     )
 }

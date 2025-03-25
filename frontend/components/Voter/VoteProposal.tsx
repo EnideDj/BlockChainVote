@@ -28,9 +28,7 @@ export default function VoteProposal() {
             })
 
             setProposals(result as Proposal[])
-        } catch (error) {
-            console.error('Erreur chargement propositions :', error)
-        }
+        } catch {}
     }
 
     const handleVote = async () => {
@@ -50,7 +48,6 @@ export default function VoteProposal() {
             await waitForTransactionReceipt(config, { hash: txHash })
             setStatus('success')
         } catch (error) {
-            console.error('Erreur vote :', error)
             setStatus('error')
         }
     }

@@ -29,8 +29,7 @@ export default function SubmitProposal() {
             await waitForTransactionReceipt(config, { hash: txHash })
             setStatus('success')
             setDescription('')
-        } catch (err) {
-            console.error('Erreur enregistrement proposition :', err)
+        } catch {
             setStatus('error')
         }
     }

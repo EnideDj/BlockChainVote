@@ -52,10 +52,9 @@ Le contrat Voting permet de gérer un système de vote décentralisé avec les f
 ---
 ## Tests
 
-Les tests sont définis pour vérifier que le contrat fonctionne correctement. Voici les tests existants :
-## Tests
-
-Le fichier test/Voting.test.js contient des tests unitaires basés sur Chai + Hardhat.
+Les tests sont définis pour vérifier que le contrat fonctionne correctement. 
+Voici les tests existants :
+###### Le fichier test/Voting.test.js contient des tests unitaires basés sur Chai + Hardhat.
 
 ```env
 npx hardhat test
@@ -68,17 +67,31 @@ npx hardhat test
 2. Test d’enregistrement des votants
     - Vérifie que le propriétaire peut enregistrer des votants.
     - Vérifie que l’enregistrement d’un votant déjà inscrit échoue.
+    - Vérifie que seul le propriétaire peut enregistrer des votants.
+    - Vérifie que l'enregistrement des votants est impossible une fois que la phase d'inscription est terminée.
 3. Test d’enregistrement des propositions
-    Vérifie qu’un votant inscrit peut soumettre une proposition.
-    Vérifie qu’un votant non inscrit ne peut pas soumettre une proposition.
+    - Vérifie qu’un votant inscrit peut soumettre une proposition.
+    - Vérifie qu’un votant non inscrit ne peut pas soumettre une proposition.
+    - Vérifie que l'enregistrement des propositions échoue lorsque la session d’enregistrement n’est pas active.
+    - Vérifie que la soumission d'une proposition vide échoue.
 4. Test du processus de vote
-    Vérifie qu’un votant inscrit peut voter.
-    Vérifie que les votes en double sont empêchés.
-    Vérifie qu’un votant peut s’abstenir.
+    - Vérifie qu’un votant inscrit peut voter.
+    - Vérifie que les votes en double sont empêchés.
+    - Vérifie qu’un votant peut s’abstenir.
+    - Vérifie qu'un votant ayant voté ne peut pas s'abstenir.
+    - Vérifie qu'un votant peut mettre à jour son vote pendant la session de vote. 
+    - Vérifie que le vote échoue si la session de vote n'est pas active.
+    - Vérifie que seuls les votants inscrits peuvent voter.
 5. Test de comptage des votes
-    Vérifie que les votes sont correctement comptabilisés et que la proposition gagnante est déterminée.
+    - Vérifie que les votes sont correctement comptabilisés.
+    - Vérifie que la proposition gagnante est correctement déterminée.
+    - Vérifie que le contrat gère correctement les égalités (plusieurs propositions gagnantes).
+    - Vérifie que la proposition gagnante est correctement mise à jour dans l'état du contrat.
+    
 6. Test de l’historique des résultats
-    Vérifie que les résultats des votes précédents sont bien stockés.
+    - Vérifie que les résultats des votes précédents sont bien stockés.
+    - Vérifie que l'historique des résultats contient les informations complètes : proposition gagnante, nombre de votes, et total des propositions soumises.
+    - Vérifie que l’historique est correctement mis à jour après chaque vote comptabilisé.
 ```
 ---
 ## Configuration

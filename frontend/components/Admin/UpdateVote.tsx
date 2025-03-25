@@ -19,17 +19,14 @@ export default function UpdateVote() {
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
 
     const fetchProposals = async () => {
-        try {
-            const all = await readContract(config, {
-                address: CONTRACT_ADDRESS,
-                abi: CONTRACT_ABI,
-                functionName: 'getAllProposals',
-                account: address,
-            })
-            setProposals(all as Proposal[])
-        } catch (err) {
-            console.error('Erreur chargement propositions :', err)
-        }
+
+        const all = await readContract(config, {
+            address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
+            functionName: 'getAllProposals',
+            account: address,
+        })
+        setProposals(all as Proposal[])
     }
 
     const handleUpdate = async () => {
@@ -48,8 +45,7 @@ export default function UpdateVote() {
 
             await waitForTransactionReceipt(config, { hash: txHash })
             setStatus('success')
-        } catch (err) {
-            console.error('Erreur mise à jour vote :', err)
+        } catch {
             setStatus('error')
         }
     }

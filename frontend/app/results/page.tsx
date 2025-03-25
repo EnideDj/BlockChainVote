@@ -27,8 +27,7 @@ export default function PublicResultsPage() {
                 functionName: 'getPastResults',
             })
             setResults(data as VotingResult[])
-        } catch (err) {
-            console.error('Erreur récupération résultats :', err)
+        } catch {
         } finally {
             setLoading(false)
         }
