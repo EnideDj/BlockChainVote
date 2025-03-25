@@ -32,7 +32,7 @@ voici le lien contennant les détails des fonctionnalités : []
 Les tests sont définis pour vérifier que le contrat fonctionne correctement.(Ils sont documentés ici : [])
 
 ---
-## Déploiement
+## Déploiement Backend
 
 #### En local (Hardhat)
 1.	Lancer un nœud local :
@@ -69,6 +69,20 @@ npx hardhat balance --network sepolia
 ```
 
 ---
+
+## Déploiement Frontend
+
+#### En local (Hardhat)
+1.	Installer les dépendances :
+
+```
+npm install
+```
+2.	Run le projet :
+
+```
+npm run dev
+```
 
 ### Développement du Frontend (Next.js / React)
 
