@@ -26,15 +26,13 @@ Ce projet vise la création d’une application décentralisée (DApp) permettan
 
 ### 2. Tests et Ajout de Fonctionnalités 
 
-- Implémentation de tests unitaires en JavaScript (Truffle, Hardhat, ou Foundry).
-
-- Vérification des transitions d’état et restrictions d’accès.
+- Implémentation de tests unitaires
 
 - Ajout de deux fonctionnalités innovantes :
 
-- Un système de vote à bulletin secret avec hachage des votes.
-
-- Une option de vote par délégation.
+  - Un système de vote à bulletin secret avec hachage des votes.
+  
+  - Une option de vote par délégation.
 
 ### 3. Déploiement et Sécurité 
 
