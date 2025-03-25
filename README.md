@@ -6,9 +6,9 @@ Ce projet vise la création d’une application décentralisée (DApp) permettan
 
 ## Membres du groupe
 
-- Enide DJENDER
-- Ousmane DIALLO
-- Amanie SAID
+- **Enide DJENDER**
+- **Ousmane DIALLO**
+- **Amanie SAID**
 
 ## Objectifs
 
