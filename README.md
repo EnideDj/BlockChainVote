@@ -4,6 +4,12 @@
 
 Ce projet vise la création d’une application décentralisée (DApp) permettant d’organiser un vote en toute transparence et sécurité grâce à un contrat intelligent déployé sur la blockchain Ethereum. Seuls les électeurs inscrits sur une liste blanche peuvent soumettre des propositions et voter.
 
+## Membres du groupe
+
+- Enide DJENDER
+- Ousmane DIALLO
+- Amanie SAID
+
 ## Objectifs
 
 ### 1. Développement du Smart Contract (Solidity)
