@@ -7,21 +7,8 @@ import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 export function useWorkflowStep() {
     const publicClient = usePublicClient()
     const [step, setStep] = useState(0)
-    const [realStep, setRealStep] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
     const [isError, setIsError] = useState(false)
-
-    const mapStep = (raw: number) => {
-        switch (raw) {
-            case 0: return 0
-            case 1:
-            case 2: return 1
-            case 3: return 2
-            case 4: return 3
-            case 5: return 4
-            default: return 0
-        }
-    }
 
     const fetchStep = async () => {
         if (!publicClient) return
@@ -33,10 +20,7 @@ export function useWorkflowStep() {
             })
 
             const raw = Number(result)
-            const mapped = mapStep(raw)
-
-            setStep(mapped)
-            setRealStep(raw)
+            setStep(raw)
             setIsLoading(false)
         } catch (err) {
             console.error('Erreur lecture workflowStatus:', err)
@@ -67,7 +51,6 @@ export function useWorkflowStep() {
     if (!publicClient) {
         return {
             step: 0,
-            realStep: 0,
             isLoading: true,
             isError: false,
             refetch: () => {},
@@ -76,7 +59,6 @@ export function useWorkflowStep() {
 
     return {
         step,
-        realStep,
         isLoading,
         isError,
         refetch: fetchStep,

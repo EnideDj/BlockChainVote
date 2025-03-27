@@ -30,16 +30,15 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             setStatus('success')
             setDescription('')
             onSuccess?.()
-
-            const total = await readContract(config, {
-                address: CONTRACT_ADDRESS,
-                abi: CONTRACT_ABI,
-                functionName: 'getAllProposals',
-                account: address,
-            })
+            setTimeout(() => {
+                setStatus('idle')
+            }, 3000)
 
         } catch {
             setStatus('error')
+            setTimeout(() => {
+                setStatus('idle')
+            }, 3000)
         }
     }
 

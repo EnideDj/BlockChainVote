@@ -181,7 +181,13 @@
       "type": "event"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_proposalId",
+          "type": "uint256"
+        }
+      ],
       "name": "abstain",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -310,55 +316,24 @@
           "internalType": "address",
           "name": "_addr",
           "type": "address"
-        }
-      ],
-      "name": "getVoter",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "bool",
-              "name": "isRegistered",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "hasVoted",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "hasAbstained",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "votedProposalId",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct Voting.Voter",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_addr",
-          "type": "address"
-        }
-      ],
-      "name": "getVoterVote",
-      "outputs": [
+        },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_proposalId",
           "type": "uint256"
+        }
+      ],
+      "name": "getVoterInfo",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "isRegistered",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "abstainedProposals",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -390,8 +365,19 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "hasVoted",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_proposalId",
+          "type": "uint256"
+        }
+      ],
+      "name": "hasVotedFor",
       "outputs": [
         {
           "internalType": "bool",
@@ -528,6 +514,19 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_proposalId",
+          "type": "uint256"
+        }
+      ],
+      "name": "removeVote",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_voterAddress",
           "type": "address"
@@ -541,6 +540,13 @@
     {
       "inputs": [],
       "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "resetVotingSession",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -561,19 +567,6 @@
         }
       ],
       "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_newProposalId",
-          "type": "uint256"
-        }
-      ],
-      "name": "updateVote",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -624,21 +617,6 @@
           "internalType": "bool",
           "name": "isRegistered",
           "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "hasVoted",
-          "type": "bool"
-        },
-        {
-          "internalType": "bool",
-          "name": "hasAbstained",
-          "type": "bool"
-        },
-        {
-          "internalType": "uint256",
-          "name": "votedProposalId",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",

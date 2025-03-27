@@ -6,6 +6,7 @@ import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
+import { UserMinus, Loader2, Check, AlertCircle } from 'lucide-react'
 
 export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
     const [address, setAddress] = useState('')
@@ -67,7 +68,6 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
         }
     }
 
-    // 🧽 Auto-hide le message de succès
     useEffect(() => {
         if (status === 'success' || status === 'error') {
             const timer = setTimeout(() => setStatus('idle'), 3000)
@@ -82,7 +82,10 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md border"
         >
-            <h3 className="text-lg font-semibold mb-3">Retirer un électeur</h3>
+            <div className="flex items-center gap-2 mb-3">
+                <UserMinus className="text-red-600" size={20} />
+                <h3 className="text-lg font-semibold">Retirer un électeur</h3>
+            </div>
 
             <input
                 type="text"
@@ -94,19 +97,33 @@ export default function RemoveVoter({ onSuccess }: { onSuccess?: () => void }) {
 
             <button
                 onClick={handleRemove}
-                className={`w-full px-4 py-2 rounded text-white ${
+                className={`w-full px-4 py-2 rounded text-white flex items-center justify-center gap-2 ${
                     status === 'pending' ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
                 }`}
                 disabled={status === 'pending'}
             >
-                {status === 'pending' ? 'Suppression en cours...' : 'Supprimer'}
+                {status === 'pending' ? (
+                    <>
+                        <Loader2 className="animate-spin" size={16} />
+                        Suppression en cours...
+                    </>
+                ) : (
+                    '🗑️ Supprimer'
+                )}
             </button>
 
             {status === 'error' && (
-                <p className="text-red-600 mt-2">{errorMessage}</p>
+                <div className="flex items-center text-red-600 mt-2 text-sm gap-2">
+                    <AlertCircle size={16} />
+                    <p>{errorMessage}</p>
+                </div>
             )}
+
             {status === 'success' && (
-                <p className="text-green-600 mt-2">Électeur supprimé avec succès !</p>
+                <div className="flex items-center text-green-600 mt-2 text-sm gap-2">
+                    <Check size={16} />
+                    <p>Électeur supprimé avec succès !</p>
+                </div>
             )}
         </motion.div>
     )

@@ -42,9 +42,8 @@ contract Voting is Ownable {
      */
     struct Voter {
         bool isRegistered;
-        bool hasVoted;
-        bool hasAbstained;
-        uint votedProposalId;
+        mapping(uint => bool) votedProposals;
+        mapping(uint => bool) abstainedProposals;
     }
 
     /**
@@ -133,12 +132,15 @@ contract Voting is Ownable {
     }
 
     /**
-     * @notice Retrieves voter details by address.
+     * @notice Retrieves if the voter is registered and if they abstained from a specific proposal.
      * @param _addr The address of the voter.
-     * @return Voter struct containing voter information.
+     * @param _proposalId The proposal ID to check abstention for.
+     * @return isRegistered True if registered.
+     * @return abstainedProposals True if abstained for that proposal.
      */
-    function getVoter(address _addr) external view onlyRegisteredVoter returns (Voter memory) {
-        return voters[_addr];
+    function getVoterInfo(address _addr, uint _proposalId) external view onlyRegisteredVoter returns (bool isRegistered, bool abstainedProposals) {
+        Voter storage voter = voters[_addr];
+        return (voter.isRegistered, voter.abstainedProposals[_proposalId]);
     }
 
     /**
@@ -151,13 +153,13 @@ contract Voting is Ownable {
     }
 
     /**
-     * @notice Retrieves the proposal ID that a voter has voted for.
+     * @notice Check if a voter has voted for a specific proposal.
      * @param _addr The address of the voter.
-     * @return The ID of the proposal the voter voted for.
+     * @param _proposalId The proposal ID.
+     * @return True if the voter voted for that proposal, false otherwise.
      */
-    function getVoterVote(address _addr) external view onlyRegisteredVoter returns (uint) {
-        require(voters[_addr].hasVoted, "This voter has not voted yet.");
-        return voters[_addr].votedProposalId;
+    function hasVotedFor(address _addr, uint _proposalId) external view onlyRegisteredVoter returns (bool) {
+        return voters[_addr].votedProposals[_proposalId];
     }
 
     /**
@@ -195,13 +197,6 @@ contract Voting is Ownable {
         return pastResults;
     }
 
-    /**
-     * @notice Checks if the caller has voted.
-     * @return A boolean indicating if the caller has voted.
-     */
-    function hasVoted() public view returns (bool) {
-        return voters[msg.sender].hasVoted;
-    }
 
     ///------------------------------------------------------------------------
     /// WRITE FUNCTIONS
@@ -267,35 +262,40 @@ contract Voting is Ownable {
      */
     function vote(uint _proposalId) public onlyDuringVotingSession onlyRegisteredVoter {
         require(_proposalId < proposals.length, "Invalid proposal ID.");
-        require(!voters[msg.sender].hasVoted, "You have already voted.");
-        require(!voters[msg.sender].hasAbstained, "You have abstained and cannot vote.");
+        require(!voters[msg.sender].abstainedProposals[_proposalId], "You have abstained from this proposal and cannot vote.");
+        require(!voters[msg.sender].votedProposals[_proposalId], "You have already voted for this proposal.");
+
         proposals[_proposalId].voteCount++;
-        voters[msg.sender].hasVoted = true;
-        voters[msg.sender].votedProposalId = _proposalId;
+        voters[msg.sender].votedProposals[_proposalId] = true;
+
         emit Voted(msg.sender, _proposalId);
     }
 
     /**
-     * @notice Allows a voter to update their vote.
-     * @param _newProposalId The ID of the new proposal to vote for.
+     * @notice Allows a voter to remove their vote from a specific proposal.
+     * @param _proposalId The ID of the proposal.
      */
-    function updateVote(uint _newProposalId) public onlyDuringVotingSession onlyRegisteredVoter {
-        require(voters[msg.sender].hasVoted, "You have not voted yet.");
-        require(_newProposalId < proposals.length, "Invalid proposal ID.");
-        proposals[voters[msg.sender].votedProposalId].voteCount--;
-        proposals[_newProposalId].voteCount++;
-        voters[msg.sender].votedProposalId = _newProposalId;
-        emit VoteUpdated(msg.sender, _newProposalId);
+    function removeVote(uint _proposalId) public onlyDuringVotingSession onlyRegisteredVoter {
+        require(_proposalId < proposals.length, "Invalid proposal ID.");
+        require(voters[msg.sender].votedProposals[_proposalId], "You haven't voted for this proposal.");
+        voters[msg.sender].votedProposals[_proposalId] = false;
+        proposals[_proposalId].voteCount--;
+        emit VoteUpdated(msg.sender, _proposalId);
     }
 
     /**
-     * @notice Allows a voter to abstain from voting.
+     * @notice Allows a voter to abstain from a specific proposal.
+     * @param _proposalId The ID of the proposal to abstain from.
      */
-    function abstain() public onlyDuringVotingSession onlyRegisteredVoter {
-        require(!voters[msg.sender].hasVoted, "You have already voted.");
-        require(!voters[msg.sender].hasAbstained, "You have already abstained.");
-        voters[msg.sender].hasAbstained = true;
+    function abstain(uint _proposalId) public onlyDuringVotingSession onlyRegisteredVoter {
+        require(_proposalId < proposals.length, "Invalid proposal ID.");
+        require(!voters[msg.sender].votedProposals[_proposalId], "Already voted on this proposal.");
+        require(!voters[msg.sender].abstainedProposals[_proposalId], "Already abstained from this proposal.");
+
+        voters[msg.sender].abstainedProposals[_proposalId] = true;
+        proposals[_proposalId].voteCount += 0;
         abstentionsCount++;
+
         emit Abstained(msg.sender);
     }
 
@@ -327,5 +327,31 @@ contract Voting is Ownable {
         workflowStatus = WorkflowStatus.VotesTallied;
         emit WorkflowStatusChange(WorkflowStatus.VotingSessionEnded, WorkflowStatus.VotesTallied);
         emit VoteTallied(winningProposalId, proposals[winningProposalId].description, proposals[winningProposalId].voteCount);
+    }
+
+    /**
+     * @notice Resets the voting session so a new one can start.
+     * This will clear all proposals, votes, and results,
+     * and set the workflow back to the first step.
+     */
+    function resetVotingSession() public onlyOwner {
+        require(workflowStatus == WorkflowStatus.VotesTallied, "Cannot reset before tallying.");
+
+        delete proposals;
+        delete winningProposals;
+        winningProposalId = 0;
+        abstentionsCount = 0;
+
+        for (uint i = 0; i < voterAddresses.length; i++) {
+            address voterAddr = voterAddresses[i];
+            for (uint j = 0; j < 100; j++) {
+                voters[voterAddr].votedProposals[j] = false;
+                voters[voterAddr].abstainedProposals[j] = false;
+            }
+        }
+
+        workflowStatus = WorkflowStatus.RegisteringVoters;
+
+        emit WorkflowStatusChange(WorkflowStatus.VotesTallied, WorkflowStatus.RegisteringVoters);
     }
 }

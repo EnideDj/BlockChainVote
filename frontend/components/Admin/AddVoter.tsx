@@ -6,6 +6,7 @@ import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
+import { UserPlus, Loader2, CheckCircle, AlertCircle, Ban } from 'lucide-react'
 
 export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
     const [address, setAddress] = useState('')
@@ -66,7 +67,10 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md border"
         >
-            <h3 className="text-lg font-semibold mb-3">👤 Ajouter un électeur</h3>
+            <div className="flex items-center gap-2 mb-3">
+                <UserPlus className="text-blue-600" />
+                <h3 className="text-lg font-semibold">Ajouter un électeur</h3>
+            </div>
 
             <input
                 type="text"
@@ -78,25 +82,30 @@ export default function AddVoter({ onSuccess }: { onSuccess?: () => void }) {
 
             <button
                 onClick={handleAdd}
-                className={`w-full px-4 py-2 rounded text-white ${
+                className={`w-full px-4 py-2 rounded text-white flex items-center justify-center gap-2 ${
                     status === 'pending' || !canAddVoter
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700'
                 }`}
                 disabled={status === 'pending' || !canAddVoter}
             >
-                {status === 'pending' ? '⏳ Ajout en cours...' : '➕ Ajouter'}
+                {status === 'pending' ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                {status === 'pending' ? 'Ajout en cours...' : 'Ajouter'}
             </button>
 
             {status === 'error' && (
-                <p className="text-red-600 mt-2">{errorMessage}</p>
+                <p className="text-red-600 mt-2 flex items-center gap-1 text-sm">
+                    <AlertCircle size={16} /> {errorMessage}
+                </p>
             )}
             {status === 'success' && (
-                <p className="text-green-600 mt-2">Électeur ajouté avec succès !</p>
+                <p className="text-green-600 mt-2 flex items-center gap-1 text-sm">
+                    <CheckCircle size={16} /> Électeur ajouté avec succès !
+                </p>
             )}
             {!canAddVoter && (
-                <p className="text-yellow-600 mt-2 text-sm">
-                    Vous ne pouvez plus ajouter d’électeurs à cette étape.
+                <p className="text-yellow-600 mt-2 text-sm flex items-center gap-1">
+                    <Ban size={16} /> Vous ne pouvez plus ajouter d’électeurs à cette étape.
                 </p>
             )}
         </motion.div>

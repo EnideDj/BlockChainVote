@@ -5,7 +5,7 @@ import { readContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 
-export default function WinnerDisplay() {
+export default function WinnerDisplay({ refreshKey }: { refreshKey?: number }) {
     const [winners, setWinners] = useState<{ description: string; voteCount: bigint }[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -33,7 +33,7 @@ export default function WinnerDisplay() {
         }
 
         fetchWinners()
-    }, [])
+    }, [refreshKey])
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-md my-4">

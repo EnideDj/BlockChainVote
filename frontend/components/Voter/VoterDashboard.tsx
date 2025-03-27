@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 export default function VoterDashboard() {
-    const { step, realStep, isLoading } = useWorkflowStep()
+    const { step, isLoading } = useWorkflowStep()
     const [refreshKey, setRefreshKey] = useState(0)
 
     const handleRefresh = () => {
@@ -27,14 +27,18 @@ export default function VoterDashboard() {
             transition={{ duration: 0.3 }}
             className="space-y-6"
         >
-            {realStep === 1 && <SubmitProposal onSuccess={handleRefresh} />}
+            {step === 1 && <SubmitProposal onSuccess={handleRefresh} />}
 
-            {realStep === 1 && <ProposalList key={refreshKey} />}
+            {step === 1 && <ProposalList key={refreshKey} />}
 
-            {realStep === 3 && (<VoteProposal />
+            {step === 3 && (
+                <>
+                    <VoteProposal onSuccess={handleRefresh} />
+                    <ProposalList key={refreshKey} />
+                </>
             )}
 
-            {realStep === 5 && <WinnerDisplay />}
+            {step === 5 && <WinnerDisplay />}
         </motion.section>
     )
 }

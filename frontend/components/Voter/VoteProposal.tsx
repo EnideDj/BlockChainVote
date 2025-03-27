@@ -11,11 +11,9 @@ type Proposal = {
     voteCount: bigint
 }
 
-export default function VoteProposal() {
+export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) {
     const [proposals, setProposals] = useState<Proposal[]>([])
-    const [selected, setSelected] = useState<number | null>(null)
-    const [hasVoted, setHasVoted] = useState(false)
-    const [votedProposalId, setVotedProposalId] = useState<number | null>(null)
+    const [voterVotes, setVoterVotes] = useState<Record<number, boolean>>({})
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
     const config = useConfig()
     const { address } = useAccount()
@@ -30,69 +28,66 @@ export default function VoteProposal() {
         setProposals(result as Proposal[])
     }
 
-    const fetchVoterInfo = async () => {
+    const fetchVoterVotes = async () => {
+        const votes: Record<number, boolean> = {}
+        for (let i = 0; i < proposals.length; i++) {
+            try {
+                const voted = await readContract(config, {
+                    address: CONTRACT_ADDRESS,
+                    abi: CONTRACT_ABI,
+                    functionName: 'hasVotedFor',
+                    args: [address, i],
+                    account: address,
+                })
+                votes[i] = Boolean(voted)
+            } catch {
+                votes[i] = false
+            }
+        }
+        setVoterVotes(votes)
+    }
+
+    const handleToggleVote = async (proposalId: number) => {
+        if (status === 'pending') return;
+
         try {
-            const voter = await readContract(config, {
+            setStatus('pending');
+
+            const hasVoted = voterVotes[proposalId];
+            const txHash = await writeContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
-                functionName: 'getVoter',
-                args: [address],
+                functionName: hasVoted ? 'removeVote' : 'vote',
+                args: [proposalId],
                 account: address,
-            }) as { isRegistered: boolean; hasVoted: boolean; hasAbstained: boolean; votedProposalId: bigint }
+            });
 
-            setHasVoted(voter.hasVoted)
-            setVotedProposalId(Number(voter.votedProposalId))
+            await waitForTransactionReceipt(config, { hash: txHash });
+
+            setTimeout(async () => {
+                await fetchProposals();
+                await fetchVoterVotes();
+                onSuccess?.();
+                setStatus('success');
+                setTimeout(() => setStatus('idle'), 3000);
+            }, 1000);
+
         } catch (err) {
-            console.error('Erreur getVoter:', err)
+            console.error('Erreur vote/removeVote :', err);
+            setStatus('error');
+            setTimeout(() => setStatus('idle'), 3000);
         }
-    }
-
-    const handleVote = async () => {
-        if (selected === null || status === 'pending') return
-        try {
-            setStatus('pending')
-
-            let txHash
-
-            if (!hasVoted) {
-                txHash = await writeContract(config, {
-                    address: CONTRACT_ADDRESS,
-                    abi: CONTRACT_ABI,
-                    functionName: 'vote',
-                    args: [selected],
-                    account: address,
-                })
-            } else if (votedProposalId !== selected) {
-                txHash = await writeContract(config, {
-                    address: CONTRACT_ADDRESS,
-                    abi: CONTRACT_ABI,
-                    functionName: 'updateVote',
-                    args: [selected],
-                    account: address,
-                })
-            } else {
-                setStatus('idle')
-                return
-            }
-
-            await waitForTransactionReceipt(config, { hash: txHash })
-
-            await fetchProposals()
-            setStatus('success')
-            setHasVoted(true)
-            setVotedProposalId(selected)
-            setTimeout(() => {
-                setStatus('idle')
-            }, 3000)
-        } catch {
-            setStatus('error')
-        }
-    }
+    };
 
     useEffect(() => {
         fetchProposals()
-        fetchVoterInfo()
     }, [])
+
+    useEffect(() => {
+        if (proposals.length > 0) {
+            fetchVoterVotes()
+        }
+    }, [proposals])
 
     return (
         <motion.div
@@ -101,44 +96,47 @@ export default function VoteProposal() {
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-3">Voter pour une proposition</h2>
+            <h2 className="text-lg font-semibold mb-3">Votez pour les propositions</h2>
 
-            <ul className="space-y-2 mb-4">
-                {proposals.map((proposal, index) => (
-                    <li
-                        key={index}
-                        onClick={() => setSelected(index)}
-                        className={`cursor-pointer border p-3 rounded-md flex justify-between items-center ${
-                            selected === index
-                                ? 'bg-blue-100 border-blue-500'
-                                : votedProposalId === index
+            <ul className="space-y-3 mb-4">
+                {proposals.map((proposal, index) => {
+                    const hasVoted = voterVotes[index]
+
+                    return (
+                        <li
+                            key={index}
+                            className={`border p-3 rounded-md flex flex-col gap-2 transition-all ${
+                                hasVoted
                                     ? 'bg-green-100 border-green-500'
-                                    : 'hover:bg-gray-50'
-                        }`}
-                    >
-                        <span>{proposal.description}</span>
-                        <span className="text-sm text-gray-500">{proposal.voteCount.toString()} vote(s)</span>
-                    </li>
-                ))}
+                                    : 'hover:bg-gray-50 border-gray-300'
+                            }`}
+                        >
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-800">{proposal.description}</span>
+                                <span className="text-sm text-gray-500">{proposal.voteCount.toString()} vote(s)</span>
+                            </div>
+
+                            <button
+                                disabled={status === 'pending'}
+                                onClick={() => handleToggleVote(index)}
+                                className={`text-white px-3 py-1 rounded text-sm transition-colors ${
+                                    voterVotes[index]
+                                        ? 'bg-red-600 hover:bg-red-700'   // Retirer
+                                        : 'bg-blue-600 hover:bg-blue-700'  // Voter
+                                }`}
+                            >
+                                {voterVotes[index] ? '❌ Retirer mon vote' : '🗳 Voter'}
+                            </button>
+                        </li>
+                    )
+                })}
             </ul>
 
-            <button
-                onClick={handleVote}
-                disabled={selected === null || status === 'pending'}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-            >
-                {status === 'pending'
-                    ? '⏳ Vote en cours...'
-                    : hasVoted && votedProposalId !== selected
-                        ? 'Modifier mon vote'
-                        : 'Voter'}
-            </button>
-
             {status === 'success' && (
-                <p className="text-green-600 mt-2">Vote enregistré avec succès !</p>
+                <p className="text-green-600 mt-3">✅ Action réussie !</p>
             )}
             {status === 'error' && (
-                <p className="text-red-600 mt-2">Une erreur est survenue.</p>
+                <p className="text-red-600 mt-3">❌ Une erreur est survenue.</p>
             )}
         </motion.div>
     )

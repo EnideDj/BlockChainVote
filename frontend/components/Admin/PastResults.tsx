@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { readContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
+import { History, Trophy } from 'lucide-react'
 
 type Result = {
     winningProposalId: bigint
@@ -41,7 +42,11 @@ export default function PastResults() {
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-md my-4">
-            <h2 className="text-xl font-bold mb-3">📜 Historique des votes</h2>
+            <div className="flex items-center gap-2 mb-3">
+                <History className="text-blue-600" size={20} />
+                <h2 className="text-xl font-bold">Historique des votes</h2>
+            </div>
+
             {loading ? (
                 <p className="text-gray-500">Chargement...</p>
             ) : results.length === 0 ? (
@@ -49,12 +54,18 @@ export default function PastResults() {
             ) : (
                 <ul className="space-y-3">
                     {results.map((res, idx) => (
-                        <li key={idx} className="border p-3 rounded-md bg-gray-50">
-                            <p>
-                                🏆 <strong>{res.winningProposalDescription}</strong> avec{' '}
-                                <strong>{res.winningVoteCount.toString()} vote(s)</strong>
-                            </p>
-                            <p className="text-sm text-gray-500">
+                        <li
+                            key={idx}
+                            className="border p-3 rounded-md bg-gray-50 shadow-sm hover:shadow transition"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Trophy className="text-yellow-600" size={18} />
+                                <p className="font-medium">
+                                    {res.winningProposalDescription} avec{' '}
+                                    <strong>{res.winningVoteCount.toString()} vote(s)</strong>
+                                </p>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">
                                 Total propositions : {res.totalProposals.toString()}
                             </p>
                         </li>

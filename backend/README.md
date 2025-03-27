@@ -42,12 +42,16 @@ Le contrat Voting permet de gérer un système de vote décentralisé avec les f
 	- getWinners() : Retourne les propositions gagnantes après le décompte des votes.
 	- getPastResults() : Retourne les résultats précédents des élections.
 
-5. Fonctions de consultation
+5. Réinitialisation
+    - resetVotingSession() : Permet à l’admin de réinitialiser complètement la session pour recommencer depuis l’étape 1.
+
+6. Fonctions de consultation
 	- getAllVoters() : Retourne toutes les adresses des votants enregistrés.
-	- getVoter(address _addr) : Retourne les informations sur un votant donné.
 	- getOneProposal(uint _id) : Retourne une proposition donnée par son ID.
-	- getVoterVote(address _addr) : Retourne l’ID de la proposition qu’un votant a choisie.
-	- hasVoted() : Vérifie si l’appelant a voté.
+	- getVoterInfo(address, proposalId : Détails sur un votant.
+	- hasVotedFor(address, proposalId) : Indique si un votant a voté pour une proposition.
+
+
 ```
 ---
 ## Tests
