@@ -30,13 +30,12 @@ backend/
 ---
 ## Fonctionnalités du contrat Voting
 
-Le contrat Voting permet de gérer un système de vote décentralisé avec les fonctionnalités suivantes :
-voici le lien contennant les détails des fonctionnalités : [https://github.com/EnideDj/BlockChainVote/tree/config/frontend/backend#fonctionnalit%C3%A9s-du-contrat-voting]
+Le contrat Voting permet de gérer un système de vote décentralisé avec plusieurs fonctionnalités.
 
 ---
 ## Tests
 
-Les tests sont définis pour vérifier que le contrat fonctionne correctement.(Ils sont documentés ici : [https://github.com/EnideDj/BlockChainVote/tree/config/frontend/backend#tests])
+Les tests sont définis pour vérifier que le contrat fonctionne correctement.
 
 ---
 ## Déploiement Backend
