@@ -76,6 +76,20 @@ npx hardhat balance --network sepolia
 ```
 
 ---
+## Structure Frontend
+
+frontend/
+├── contracts/
+│   └── Voting.sol            → Contrat principal de vote
+├── scripts/
+│   └── deploy.ts             → Script de déploiement du contrat
+├── ignition/
+│   └── modules/
+│       └── VotingModule.ts   → Module Ignition (alternative à deploy.ts)
+├── hardhat.config.ts         → Configuration Hardhat
+├── typechain-types/          → Typages générés pour TypeScript
+└── .env                      → Fichier des variables d’environnement
+
 
 ## Déploiement Frontend
 
