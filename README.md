@@ -77,23 +77,22 @@ npx hardhat balance --network sepolia
 
 ---
 ## Structure Frontend
-
-frontend/
-├── app/
-   ├── admin
-│    └── page.tsx  
-   ├── past-results
-│    └── page.tsx
-   ├── results
-│    └── page.tsx
-   ├── voter
-│    └── page.tsx  
-└── layout.tsx
-└── page.tsx
-└── .env     
-└── .env.local     
-
-
+```env
+   frontend/
+   ├── app/
+      ├── admin
+   │    └── page.tsx  
+      ├── past-results
+   │    └── page.tsx
+      ├── results
+   │    └── page.tsx
+      ├── voter
+   │    └── page.tsx  
+   └── layout.tsx
+   └── page.tsx
+   └── .env     
+   └── .env.local     
+```
 ## Déploiement Frontend
 
 #### En local (Hardhat)
