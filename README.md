@@ -5,6 +5,11 @@
 Ce projet vise la création d’une application décentralisée (DApp) permettant d’organiser un vote en toute transparence et sécurité grâce à un contrat intelligent déployé sur la blockchain Ethereum. Seuls les électeurs inscrits sur une liste blanche peuvent soumettre des propositions et voter.
 
 ---
+## Liens Importants
+Le projet a été testé à la fois en local et sur le réseau Sepolia. Il est important de noter que le temps de transaction sur Sepolia est plus long en raison de la nature du réseau de test, et qu'il nécessite également une plus grande quantité d'Ethereum pour effectuer les transactions, c'est pourquoi la vidéo est courte, elle est faite pour vous montrer que c'est fonctionnel sur Sepolia.
+Vidéo de démonstration en local: [https://drive.google.com/file/d/1XOlCEycg13qR5fJm5_-OlZ2IDkysoWzt/view?usp=drive_link]
+Vidéo de démonstration Sepolia: [https://drive.google.com/file/d/1_awMQ6tvTZQuw6deyuPndUNaNjZS8pTm/view?usp=drive_link]
+
 
 ## Structure Backend
 ```env
@@ -114,9 +119,6 @@ npm run dev
 
 - **Tests :** Hardhat Test Environment
 
-## Liens Importants
-
-Vidéo de démonstration : []
 
 
 
