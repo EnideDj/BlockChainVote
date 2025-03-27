@@ -7,6 +7,7 @@ import WinnerDisplay from '@/components/Shared/WinnerDisplay'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
+import { Loader } from 'lucide-react'
 
 export default function VoterDashboard() {
     const { step, isLoading } = useWorkflowStep()
@@ -17,7 +18,12 @@ export default function VoterDashboard() {
     }
 
     if (isLoading) {
-        return <p className="text-center text-gray-500">Chargement de l’état du vote...</p>
+        return (
+            <div className="flex justify-center items-center text-gray-500 gap-2 mt-10">
+                <Loader className="animate-spin" size={20} />
+                <span>Chargement de l’état du vote...</span>
+            </div>
+        )
     }
 
     return (
@@ -27,9 +33,12 @@ export default function VoterDashboard() {
             transition={{ duration: 0.3 }}
             className="space-y-6"
         >
-            {step === 1 && <SubmitProposal onSuccess={handleRefresh} />}
-
-            {step === 1 && <ProposalList key={refreshKey} />}
+            {step === 1 && (
+                <>
+                    <SubmitProposal onSuccess={handleRefresh} />
+                    <ProposalList key={refreshKey} />
+                </>
+            )}
 
             {step === 3 && (
                 <>

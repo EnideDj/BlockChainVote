@@ -5,7 +5,7 @@ import { useAccount, useConfig } from 'wagmi'
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Loader2, Users } from 'lucide-react'
 
 export default function VoterList({ refresh }: { refresh: number }) {
     const config = useConfig()
@@ -50,8 +50,9 @@ export default function VoterList({ refresh }: { refresh: number }) {
 
             await waitForTransactionReceipt(config, { hash: tx })
             setVoters((prev) => prev.filter((v) => v !== addr))
-        } catch {}
-        finally {
+        } catch {
+            setError("Erreur lors de la suppression.")
+        } finally {
             setRemoving(null)
             setConfirming(null)
         }
@@ -64,16 +65,29 @@ export default function VoterList({ refresh }: { refresh: number }) {
             transition={{ duration: 0.4 }}
             className="bg-white p-4 rounded-xl shadow-md border"
         >
-            <h3 className="text-lg font-semibold mb-3">📋 Liste des électeurs</h3>
-            {loading && <p className="text-gray-500">⏳ Chargement...</p>}
+            <div className="flex items-center gap-2 mb-4">
+                <Users className="text-blue-600" size={20} />
+                <h3 className="text-lg font-semibold">Liste des électeurs</h3>
+            </div>
+
+            {loading && (
+                <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 className="animate-spin" size={16} />
+                    Chargement...
+                </div>
+            )}
+
             {error && <p className="text-red-600">{error}</p>}
+
             {!loading && voters.length === 0 && (
                 <p className="text-gray-500">Aucun électeur enregistré.</p>
             )}
+
             <ul className="divide-y text-sm">
                 {voters.map((addr) => (
                     <li key={addr} className="flex justify-between items-center py-2">
                         <span className="truncate">{addr}</span>
+
                         {confirming === addr ? (
                             <div className="flex gap-2 text-xs">
                                 <button
@@ -81,7 +95,14 @@ export default function VoterList({ refresh }: { refresh: number }) {
                                     disabled={removing === addr}
                                     className="text-red-600 hover:underline"
                                 >
-                                    Oui
+                                    {removing === addr ? (
+                                        <span className="flex items-center gap-1">
+                                            <Loader2 size={14} className="animate-spin" />
+                                            Suppression...
+                                        </span>
+                                    ) : (
+                                        'Oui'
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => setConfirming(null)}

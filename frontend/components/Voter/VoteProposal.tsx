@@ -5,6 +5,7 @@ import { useAccount, useConfig } from 'wagmi'
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
+import { ThumbsUp, Trash2, CheckCircle, XCircle } from 'lucide-react'
 
 type Proposal = {
     description: string
@@ -15,6 +16,7 @@ export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) 
     const [proposals, setProposals] = useState<Proposal[]>([])
     const [voterVotes, setVoterVotes] = useState<Record<number, boolean>>({})
     const [status, setStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
+
     const config = useConfig()
     const { address } = useAccount()
 
@@ -48,36 +50,35 @@ export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) 
     }
 
     const handleToggleVote = async (proposalId: number) => {
-        if (status === 'pending') return;
+        if (status === 'pending') return
 
         try {
-            setStatus('pending');
+            setStatus('pending')
+            const hasVoted = voterVotes[proposalId]
 
-            const hasVoted = voterVotes[proposalId];
             const txHash = await writeContract(config, {
                 address: CONTRACT_ADDRESS,
                 abi: CONTRACT_ABI,
                 functionName: hasVoted ? 'removeVote' : 'vote',
                 args: [proposalId],
                 account: address,
-            });
+            })
 
-            await waitForTransactionReceipt(config, { hash: txHash });
+            await waitForTransactionReceipt(config, { hash: txHash })
 
             setTimeout(async () => {
-                await fetchProposals();
-                await fetchVoterVotes();
-                onSuccess?.();
-                setStatus('success');
-                setTimeout(() => setStatus('idle'), 3000);
-            }, 1000);
-
+                await fetchProposals()
+                await fetchVoterVotes()
+                onSuccess?.()
+                setStatus('success')
+                setTimeout(() => setStatus('idle'), 3000)
+            }, 1000)
         } catch (err) {
-            console.error('Erreur vote/removeVote :', err);
-            setStatus('error');
-            setTimeout(() => setStatus('idle'), 3000);
+            console.error('Erreur vote/removeVote :', err)
+            setStatus('error')
+            setTimeout(() => setStatus('idle'), 3000)
         }
-    };
+    }
 
     useEffect(() => {
         fetchProposals()
@@ -96,7 +97,10 @@ export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) 
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-3">Votez pour les propositions</h2>
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <ThumbsUp size={18} className="text-blue-600" />
+                Votez pour les propositions
+            </h2>
 
             <ul className="space-y-3 mb-4">
                 {proposals.map((proposal, index) => {
@@ -113,19 +117,31 @@ export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) 
                         >
                             <div className="flex justify-between items-center">
                                 <span className="font-medium text-gray-800">{proposal.description}</span>
-                                <span className="text-sm text-gray-500">{proposal.voteCount.toString()} vote(s)</span>
+                                <span className="text-sm text-gray-500">
+                                    {proposal.voteCount.toString()} vote(s)
+                                </span>
                             </div>
 
                             <button
                                 disabled={status === 'pending'}
                                 onClick={() => handleToggleVote(index)}
-                                className={`text-white px-3 py-1 rounded text-sm transition-colors ${
-                                    voterVotes[index]
-                                        ? 'bg-red-600 hover:bg-red-700'   // Retirer
-                                        : 'bg-blue-600 hover:bg-blue-700'  // Voter
+                                className={`flex items-center justify-center gap-2 text-white px-3 py-1 rounded text-sm transition-colors ${
+                                    hasVoted
+                                        ? 'bg-red-600 hover:bg-red-700'
+                                        : 'bg-blue-600 hover:bg-blue-700'
                                 }`}
                             >
-                                {voterVotes[index] ? '❌ Retirer mon vote' : '🗳 Voter'}
+                                {hasVoted ? (
+                                    <>
+                                        <Trash2 size={16} />
+                                        Retirer mon vote
+                                    </>
+                                ) : (
+                                    <>
+                                        <ThumbsUp size={16} />
+                                        Voter
+                                    </>
+                                )}
                             </button>
                         </li>
                     )
@@ -133,10 +149,17 @@ export default function VoteProposal({ onSuccess }: { onSuccess?: () => void }) 
             </ul>
 
             {status === 'success' && (
-                <p className="text-green-600 mt-3">✅ Action réussie !</p>
+                <div className="flex items-center gap-2 text-green-600 mt-3">
+                    <CheckCircle size={18} />
+                    <span>Action réussie !</span>
+                </div>
             )}
+
             {status === 'error' && (
-                <p className="text-red-600 mt-3">❌ Une erreur est survenue.</p>
+                <div className="flex items-center gap-2 text-red-600 mt-3">
+                    <XCircle size={18} />
+                    <span>Une erreur est survenue.</span>
+                </div>
             )}
         </motion.div>
     )

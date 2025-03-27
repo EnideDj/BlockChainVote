@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useAccount, useConfig } from 'wagmi'
-import {writeContract, waitForTransactionReceipt, readContract} from '@wagmi/core'
+import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { motion } from 'framer-motion'
+import { Loader2, Send } from 'lucide-react'
 
 export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }) {
     const [description, setDescription] = useState('')
@@ -30,15 +31,11 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             setStatus('success')
             setDescription('')
             onSuccess?.()
-            setTimeout(() => {
-                setStatus('idle')
-            }, 3000)
 
+            setTimeout(() => setStatus('idle'), 3000)
         } catch {
             setStatus('error')
-            setTimeout(() => {
-                setStatus('idle')
-            }, 3000)
+            setTimeout(() => setStatus('idle'), 3000)
         }
     }
 
@@ -49,7 +46,10 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             transition={{ duration: 0.3 }}
             className="bg-white p-4 rounded-xl shadow-md"
         >
-            <h2 className="text-lg font-semibold mb-2">Soumettre une proposition</h2>
+            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <Send size={18} className="text-blue-600" />
+                Soumettre une proposition
+            </h2>
 
             <input
                 type="text"
@@ -62,9 +62,19 @@ export default function SubmitProposal({ onSuccess }: { onSuccess?: () => void }
             <button
                 onClick={handleSubmit}
                 disabled={status === 'pending'}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full disabled:opacity-50"
             >
-                {status === 'pending' ? '⏳ Envoi...' : 'Soumettre'}
+                {status === 'pending' ? (
+                    <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Envoi...
+                    </>
+                ) : (
+                    <>
+                        <Send size={16} />
+                        Soumettre
+                    </>
+                )}
             </button>
 
             {status === 'success' && (

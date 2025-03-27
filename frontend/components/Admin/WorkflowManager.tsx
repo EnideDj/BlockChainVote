@@ -1,20 +1,29 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { waitForTransactionReceipt, writeContract, readContract } from '@wagmi/core'
+import { waitForTransactionReceipt, writeContract } from '@wagmi/core'
 import { useAccount, useConfig } from 'wagmi'
 import { useWorkflowStep } from '@/hooks/useWorkflowStep'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/utils/constants'
 import { workflowSteps } from '@/utils/workflowSteps'
 import { motion } from 'framer-motion'
-import { Users, FilePlus, Ban, Vote, Lock, CheckCircle2 } from 'lucide-react'
+import {
+    Users,
+    FilePlus,
+    FileCheck,
+    Vote,
+    Clock,
+    CheckCircle2,
+    Loader2,
+    ArrowRight
+} from 'lucide-react'
 
 const iconsMap = {
     Users,
     FilePlus,
-    Ban,
+    FileCheck,
     Vote,
-    Lock,
+    Clock,
     CheckCircle2,
 }
 
@@ -24,7 +33,7 @@ const Button = ({
                 }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
         {...props}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-4 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-4 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
     >
         {children}
     </button>
@@ -59,7 +68,7 @@ export default function WorkflowManager() {
 
             setStatus('success')
         } catch (err) {
-            console.error('❌ Erreur passage étape :', err)
+            console.error('Erreur passage étape :', err)
             setStatus('error')
         } finally {
             setTimeout(() => setStatus('idle'), 3000)
@@ -72,9 +81,12 @@ export default function WorkflowManager() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-white p-6 rounded-xl shadow-md"
+            className="bg-white p-6 rounded-xl shadow-md border"
         >
-            <h2 className="text-xl font-semibold mb-4">⚙️ Gérer le processus</h2>
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <CheckCircle2 className="text-blue-600" size={20} />
+                Gérer le processus
+            </h2>
 
             <ul className="space-y-4 mb-6">
                 {workflowSteps.map((stepItem, index) => {
@@ -125,10 +137,20 @@ export default function WorkflowManager() {
                         Prochaine étape : <strong>{next?.label}</strong>
                     </p>
                     <Button onClick={handleNextStep} disabled={status === 'pending'}>
-                        {status === 'pending' ? '⏳ En cours...' : '➡️ Passer à l’étape suivante'}
+                        {status === 'pending' ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                En cours...
+                            </>
+                        ) : (
+                            <>
+                                <ArrowRight size={16} />
+                                Passer à l’étape suivante
+                            </>
+                        )}
                     </Button>
                     {status === 'success' && (
-                        <p className="text-green-600 mt-2">Étape passée avec succès !</p>
+                        <p className="text-green-600 mt-2">Étape passée avec succès.</p>
                     )}
                     {status === 'error' && (
                         <p className="text-red-600 mt-2">Une erreur est survenue.</p>
